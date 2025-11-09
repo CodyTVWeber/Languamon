@@ -5,16 +5,16 @@ const MOVE_SPEED = 96;
 const MAX_HUD_LOG = 4;
 
 const PALETTE = {
-    darkest: "#081a0c",
-    dark: "#123821",
-    mid: "#2f5c31",
-    light: "#78a943",
-    highlight: "#d8f97b",
-    accent: "#f4f7d2",
-    muted: "#9bb894",
-    earth: "#6f5a3c",
-    water: "#2c4a6f",
-    bloom: "#b04b8a",
+    darkest: "#10241b",
+    dark: "#1d6538",
+    mid: "#3d9c5a",
+    light: "#8fe8a4",
+    highlight: "#f3ffd8",
+    accent: "#f2f6ff",
+    muted: "#a6d9be",
+    earth: "#d3904f",
+    water: "#2e86e3",
+    bloom: "#f277ce",
 };
 
 const MAP_LAYOUT = [
@@ -188,6 +188,132 @@ const hudNodes = {
     feed: document.getElementById("hud-feed"),
 };
 
+let cleanupSceneBindings = () => {};
+
+const mobileControls = (() => {
+    const listeners = new Set();
+    const directionState = new Set();
+
+    return {
+        on(listener) {
+            listeners.add(listener);
+            return () => listeners.delete(listener);
+        },
+        emit(event) {
+            if (event.type === "direction") {
+                if (event.active) {
+                    directionState.add(event.name);
+                } else {
+                    directionState.delete(event.name);
+                }
+            }
+            listeners.forEach(listener => listener(event));
+        },
+        isDirectionActive(direction) {
+            return directionState.has(direction);
+        },
+        clear() {
+            directionState.clear();
+            if (typeof document !== "undefined") {
+                document
+                    .querySelectorAll(".mobile-controls .is-active")
+                    .forEach(element => element.classList.remove("is-active"));
+            }
+        },
+    };
+})();
+
+function setupTouchControls() {
+    if (typeof document === "undefined") return;
+    const container = document.querySelector(".mobile-controls");
+    if (!container) return;
+
+    const supportsPointerEvents = typeof window !== "undefined" && "PointerEvent" in window;
+
+    const bindHold = (element, emit) => {
+        let pointerId = null;
+
+        if (supportsPointerEvents) {
+            const activatePointer = event => {
+                if (pointerId !== null) return;
+                if (event.pointerType === "mouse" && event.button !== 0) return;
+                pointerId = event.pointerId;
+                element.classList.add("is-active");
+                emit(true);
+                if (element.setPointerCapture) {
+                    element.setPointerCapture(pointerId);
+                }
+                event.preventDefault();
+            };
+
+            const releasePointer = event => {
+                if (pointerId === null) return;
+                if (event && event.pointerId !== pointerId) return;
+                emit(false);
+                element.classList.remove("is-active");
+                if (element.hasPointerCapture && element.hasPointerCapture(pointerId)) {
+                    element.releasePointerCapture(pointerId);
+                }
+                pointerId = null;
+                if (event) {
+                    event.preventDefault();
+                }
+            };
+
+            element.addEventListener("pointerdown", activatePointer, { passive: false });
+            element.addEventListener("pointerup", releasePointer, { passive: false });
+            element.addEventListener("pointercancel", releasePointer, { passive: false });
+            element.addEventListener("lostpointercapture", releasePointer);
+        } else {
+            const activateTouch = event => {
+                if (pointerId !== null) return;
+                const touch = event.changedTouches && event.changedTouches[0];
+                if (!touch) return;
+                pointerId = touch.identifier;
+                element.classList.add("is-active");
+                emit(true);
+                event.preventDefault();
+            };
+
+            const releaseTouch = event => {
+                if (pointerId === null) return;
+                const touches = event.changedTouches ? Array.from(event.changedTouches) : [];
+                const match = touches.find(touch => touch.identifier === pointerId);
+                if (!match) return;
+                emit(false);
+                element.classList.remove("is-active");
+                pointerId = null;
+                event.preventDefault();
+            };
+
+            element.addEventListener("touchstart", activateTouch, { passive: false });
+            element.addEventListener("touchend", releaseTouch, { passive: false });
+            element.addEventListener("touchcancel", releaseTouch, { passive: false });
+        }
+
+        element.addEventListener("contextmenu", event => event.preventDefault());
+    };
+
+    container.querySelectorAll("[data-direction]").forEach(element => {
+        const direction = element.getAttribute("data-direction");
+        if (!direction) return;
+        bindHold(element, active => {
+            mobileControls.emit({ type: "direction", name: direction, active });
+        });
+    });
+
+    container.querySelectorAll("[data-action]").forEach(element => {
+        const action = element.getAttribute("data-action");
+        if (!action) return;
+        bindHold(element, active => {
+            mobileControls.emit({ type: "action", name: action, active });
+        });
+    });
+
+    mobileControls.clear();
+}
+
+setupTouchControls();
 function getActiveTrack() {
     return LANGUAGE_TRACKS.find(track => track.id === state.trackId) || null;
 }
@@ -597,7 +723,19 @@ const directionVectors = {
     right: vec2(1, 0),
 };
 
+const directionPriority = ["up", "down", "left", "right"];
+
 scene("menu", () => {
+    cleanupSceneBindings();
+    const sceneUnsubs = [];
+    const registerMobile = handler => {
+        sceneUnsubs.push(mobileControls.on(handler));
+    };
+    cleanupSceneBindings = () => {
+        sceneUnsubs.forEach(unsub => unsub());
+        mobileControls.clear();
+    };
+
     camScale(1);
     camPos(width() / 2, height() / 2);
 
@@ -668,9 +806,30 @@ scene("menu", () => {
     onKeyPress("up", () => changeSelection(-1));
     onKeyPress("enter", confirmSelection);
     onKeyPress("space", confirmSelection);
+
+    registerMobile(event => {
+        if (event.type === "direction" && event.active) {
+            if (event.name === "down") changeSelection(1);
+            if (event.name === "up") changeSelection(-1);
+        } else if (event.type === "action" && event.active) {
+            if (event.name === "confirm") {
+                confirmSelection();
+            }
+        }
+    });
 });
 
 scene("battle", ({ word }) => {
+    cleanupSceneBindings();
+    const sceneUnsubs = [];
+    const registerMobile = handler => {
+        sceneUnsubs.push(mobileControls.on(handler));
+    };
+    cleanupSceneBindings = () => {
+        sceneUnsubs.forEach(unsub => unsub());
+        mobileControls.clear();
+    };
+
     const track = getActiveTrack();
     if (!track) {
         go("menu");
@@ -757,6 +916,12 @@ scene("battle", ({ word }) => {
     let selection = 0;
     let locked = false;
 
+    function moveSelection(delta) {
+        if (locked) return;
+        selection = (selection + delta + question.answers.length) % question.answers.length;
+        refreshOptions();
+    }
+
     function refreshOptions() {
         optionNodes.forEach((node, idx) => {
             node.text = `${idx === selection ? "▶" : " "} ${question.answers[idx]}`;
@@ -781,17 +946,8 @@ scene("battle", ({ word }) => {
         wait(1.4, () => go("overworld", { resume: true }));
     }
 
-    onKeyPress("down", () => {
-        if (locked) return;
-        selection = (selection + 1) % question.answers.length;
-        refreshOptions();
-    });
-
-    onKeyPress("up", () => {
-        if (locked) return;
-        selection = (selection - 1 + question.answers.length) % question.answers.length;
-        refreshOptions();
-    });
+    onKeyPress("down", () => moveSelection(1));
+    onKeyPress("up", () => moveSelection(-1));
 
     function submit() {
         if (locked) return;
@@ -803,15 +959,40 @@ scene("battle", ({ word }) => {
     onKeyPress("enter", submit);
     onKeyPress("space", submit);
 
-    onKeyPress("escape", () => {
+    function retreat() {
         if (locked) return;
         locked = true;
         logMessage("You retreated to rethink your strategy.");
         wait(0.6, () => go("overworld", { resume: true }));
+    }
+
+    onKeyPress("escape", retreat);
+
+    registerMobile(event => {
+        if (event.type === "direction" && event.active) {
+            if (event.name === "down") moveSelection(1);
+            if (event.name === "up") moveSelection(-1);
+        } else if (event.type === "action" && event.active) {
+            if (event.name === "confirm") {
+                submit();
+            } else if (event.name === "back") {
+                retreat();
+            }
+        }
     });
 });
 
 scene("overworld", ({ intro = false } = {}) => {
+    cleanupSceneBindings();
+    const sceneUnsubs = [];
+    const registerMobile = handler => {
+        sceneUnsubs.push(mobileControls.on(handler));
+    };
+    cleanupSceneBindings = () => {
+        sceneUnsubs.forEach(unsub => unsub());
+        mobileControls.clear();
+    };
+
     const track = getActiveTrack();
     if (!track) {
         go("menu");
@@ -1022,10 +1203,12 @@ scene("overworld", ({ intro = false } = {}) => {
                 player.move(diff.unit().scale(step));
             }
         } else if (!dialogue) {
-            if (isKeyDown("up")) attemptMove("up");
-            else if (isKeyDown("down")) attemptMove("down");
-            else if (isKeyDown("left")) attemptMove("left");
-            else if (isKeyDown("right")) attemptMove("right");
+            for (const direction of directionPriority) {
+                if (isKeyDown(direction) || mobileControls.isDirectionActive(direction)) {
+                    attemptMove(direction);
+                    break;
+                }
+            }
         }
         camPos(player.pos);
     });
@@ -1066,6 +1249,18 @@ scene("overworld", ({ intro = false } = {}) => {
     onKeyPress("space", interact);
     onKeyPress("enter", interact);
     onKeyPress("l", openLexilog);
+
+    registerMobile(event => {
+        if (event.type === "action" && event.active) {
+            if (event.name === "confirm") {
+                interact();
+            } else if (event.name === "lexilog") {
+                openLexilog();
+            } else if (event.name === "back" && dialogue) {
+                dialogue.advance();
+            }
+        }
+    });
 
     if (intro) {
         startDialogue(track.intro);

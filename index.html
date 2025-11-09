@@ -16,7 +16,7 @@
                 <span id="hud-level">Rank: 1</span>
             </div>
             <div class="hud-feed" id="hud-feed"></div>
-            <p class="hud-hint">Arrow keys / WASD move • Space interacts • Enter confirms • L opens LexiLog</p>
+            <p class="hud-hint">Arrow keys / WASD move • Space or A interacts • Enter confirms • L button opens LexiLog • Tap controls on touch</p>
         </section>
         <section class="cabinet">
             <div class="cabinet-top">
@@ -32,6 +32,26 @@
             <div class="cabinet-label">LINGUA BOY ADVANCE</div>
         </section>
     </main>
+    <div class="mobile-controls">
+        <div class="mobile-pad">
+            <span class="pad-void" aria-hidden="true"></span>
+            <button class="pad-btn" data-direction="up" aria-label="Move up">▲</button>
+            <span class="pad-void" aria-hidden="true"></span>
+            <button class="pad-btn" data-direction="left" aria-label="Move left">◀</button>
+            <div class="pad-center" aria-hidden="true"></div>
+            <button class="pad-btn" data-direction="right" aria-label="Move right">▶</button>
+            <span class="pad-void" aria-hidden="true"></span>
+            <button class="pad-btn" data-direction="down" aria-label="Move down">▼</button>
+            <span class="pad-void" aria-hidden="true"></span>
+        </div>
+        <div class="mobile-actions">
+            <button class="aux-btn" data-action="lexilog" aria-label="Open LexiLog">L</button>
+            <div class="action-cluster">
+                <button class="action-btn action-b" data-action="back" aria-label="Back or retreat">B</button>
+                <button class="action-btn action-a" data-action="confirm" aria-label="Confirm or interact">A</button>
+            </div>
+        </div>
+    </div>
     <script type="module" src="game.js"></script>
 </body>
 </html>
