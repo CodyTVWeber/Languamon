@@ -1,0 +1,388 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Courier New', monospace;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.game-container {
+    background: white;
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 10px 50px rgba(0, 0, 0, 0.3);
+    max-width: 520px;
+}
+
+.game-header {
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+.game-header h1 {
+    color: #667eea;
+    font-size: 2em;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+    margin-bottom: 10px;
+}
+
+.stats {
+    display: flex;
+    justify-content: space-around;
+    font-weight: bold;
+    color: #333;
+}
+
+.game-screen {
+    position: relative;
+    background: #000;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+#gameCanvas {
+    display: block;
+    width: 100%;
+    height: auto;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+}
+
+.controls-info {
+    margin-top: 15px;
+    text-align: center;
+    color: #333;
+    font-size: 0.85em;
+}
+
+.controls-info p {
+    margin: 5px 0;
+}
+
+/* Battle Screen */
+.battle-screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.battle-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.enemy-area {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.player-area {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding-left: 50px;
+}
+
+.linguomon-display {
+    text-align: center;
+}
+
+.linguomon-display .sprite {
+    font-size: 4em;
+    margin-bottom: 10px;
+    animation: bounce 0.5s ease-in-out infinite alternate;
+}
+
+.linguomon-display.enemy .sprite {
+    font-size: 5em;
+}
+
+@keyframes bounce {
+    from { transform: translateY(0); }
+    to { transform: translateY(-10px); }
+}
+
+.linguomon-display .name {
+    font-weight: bold;
+    font-size: 1.2em;
+    color: #333;
+    background: rgba(255, 255, 255, 0.8);
+    padding: 5px 15px;
+    border-radius: 15px;
+    display: inline-block;
+}
+
+.stat-line {
+    margin-top: 8px;
+    background: rgba(255, 255, 255, 0.8);
+    padding: 8px 15px;
+    border-radius: 15px;
+    display: inline-block;
+    font-weight: bold;
+    color: #333;
+}
+
+.stat-line .word {
+    margin-right: 15px;
+    color: #667eea;
+    font-size: 1.1em;
+}
+
+.stat-line .level {
+    color: #f093fb;
+}
+
+.battle-ui {
+    background: white;
+    padding: 20px;
+    border-top: 4px solid #333;
+    min-height: 150px;
+}
+
+.battle-message {
+    font-size: 1.1em;
+    margin-bottom: 15px;
+    min-height: 50px;
+    color: #333;
+}
+
+.battle-menu {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.battle-btn {
+    padding: 15px;
+    font-size: 1em;
+    font-weight: bold;
+    font-family: 'Courier New', monospace;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.battle-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.battle-btn:active {
+    transform: translateY(0);
+}
+
+.battle-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+/* Quiz Section */
+.quiz-section {
+    margin-bottom: 15px;
+}
+
+.question {
+    font-size: 1.2em;
+    font-weight: bold;
+    margin-bottom: 15px;
+    color: #333;
+    background: #f0f0f0;
+    padding: 15px;
+    border-radius: 10px;
+}
+
+.answers {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.answer-btn {
+    padding: 15px;
+    font-size: 1em;
+    font-family: 'Courier New', monospace;
+    background: white;
+    color: #333;
+    border: 2px solid #667eea;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: bold;
+}
+
+.answer-btn:hover {
+    background: #667eea;
+    color: white;
+    transform: scale(1.05);
+}
+
+.answer-btn.correct {
+    background: #4CAF50;
+    color: white;
+    border-color: #4CAF50;
+}
+
+.answer-btn.incorrect {
+    background: #f44336;
+    color: white;
+    border-color: #f44336;
+}
+
+/* Word Selection */
+.word-selection {
+    margin-bottom: 15px;
+}
+
+.word-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.word-btn {
+    padding: 12px;
+    font-size: 0.9em;
+    font-family: 'Courier New', monospace;
+    background: white;
+    color: #333;
+    border: 2px solid #667eea;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+}
+
+.word-btn:hover {
+    background: #667eea;
+    color: white;
+}
+
+.word-btn .word-native {
+    font-weight: bold;
+    display: block;
+}
+
+.word-btn .word-translation {
+    font-size: 0.85em;
+    opacity: 0.8;
+    display: block;
+}
+
+.back-btn, .close-btn {
+    width: 100%;
+    padding: 12px;
+    font-size: 1em;
+    font-weight: bold;
+    font-family: 'Courier New', monospace;
+    background: #777;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.back-btn:hover, .close-btn:hover {
+    background: #555;
+}
+
+/* Linguodex Screen */
+.linguodex-screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.linguodex-container {
+    background: white;
+    padding: 30px;
+    border-radius: 15px;
+    max-width: 600px;
+    width: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.linguodex-container h2 {
+    color: #667eea;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.linguodex-list {
+    display: grid;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.linguodex-entry {
+    background: #f5f5f5;
+    padding: 15px;
+    border-radius: 10px;
+    border-left: 4px solid #667eea;
+}
+
+.linguodex-entry .entry-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.linguodex-entry .sprite {
+    font-size: 2em;
+}
+
+.linguodex-entry .word-info {
+    font-weight: bold;
+    color: #333;
+}
+
+.linguodex-entry .translation {
+    color: #666;
+    margin-top: 5px;
+}
+
+.linguodex-entry .catch-count {
+    color: #f093fb;
+    font-size: 0.9em;
+    margin-top: 5px;
+}
+
+/* Hidden class */
+.hidden {
+    display: none !important;
+}
