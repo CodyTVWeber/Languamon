@@ -205,11 +205,14 @@ body {
 @media (max-width: 768px) {
     body {
         padding: 5px;
+        align-items: flex-start;
+        padding-top: 20px;
     }
     
     .game-container {
         padding: 12px;
         max-width: 100%;
+        margin-bottom: 200px; /* Space for controls */
     }
     
     .mobile-controls {
@@ -223,6 +226,48 @@ body {
     
     .game-header h1 {
         font-size: 1.8em;
+    }
+    
+    .game-header {
+        padding: 10px;
+    }
+    
+    .stats {
+        font-size: 0.85em;
+    }
+}
+
+@media (max-width: 480px) {
+    .game-container {
+        padding: 8px;
+        border-radius: 16px;
+    }
+    
+    .game-header h1 {
+        font-size: 1.5em;
+    }
+    
+    .dpad {
+        width: 130px;
+        height: 130px;
+    }
+    
+    .dpad-btn {
+        width: 44px;
+        height: 44px;
+        font-size: 20px;
+    }
+    
+    .dpad-btn.up { top: 0; left: 43px; }
+    .dpad-btn.down { bottom: 0; left: 43px; }
+    .dpad-btn.left { top: 43px; left: 0; }
+    .dpad-btn.right { top: 43px; right: 0; }
+    .dpad-btn.center { top: 43px; left: 43px; }
+    
+    .action-btn {
+        width: 60px;
+        height: 60px;
+        font-size: 12px;
     }
 }
 

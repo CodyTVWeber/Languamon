@@ -116,6 +116,81 @@ class Game {
         document.getElementById('useWordBtn').addEventListener('click', () => this.handleUseWord());
         document.getElementById('backBtn').addEventListener('click', () => this.showBattleMenu());
         document.getElementById('closeLinguodex').addEventListener('click', () => this.closeLinguodex());
+        
+        // Mobile control listeners
+        this.initMobileControls();
+    }
+    
+    initMobileControls() {
+        // D-pad controls
+        const btnUp = document.getElementById('btnUp');
+        const btnDown = document.getElementById('btnDown');
+        const btnLeft = document.getElementById('btnLeft');
+        const btnRight = document.getElementById('btnRight');
+        const btnCenter = document.getElementById('btnCenter');
+        const btnLinguodex = document.getElementById('btnLinguodex');
+        
+        // Prevent default touch behavior
+        const preventScroll = (e) => {
+            e.preventDefault();
+        };
+        
+        // Direction buttons - use both touch and mouse events for compatibility
+        ['touchstart', 'mousedown'].forEach(eventType => {
+            btnUp.addEventListener(eventType, (e) => {
+                preventScroll(e);
+                this.keys['arrowup'] = true;
+            });
+            btnDown.addEventListener(eventType, (e) => {
+                preventScroll(e);
+                this.keys['arrowdown'] = true;
+            });
+            btnLeft.addEventListener(eventType, (e) => {
+                preventScroll(e);
+                this.keys['arrowleft'] = true;
+            });
+            btnRight.addEventListener(eventType, (e) => {
+                preventScroll(e);
+                this.keys['arrowright'] = true;
+            });
+        });
+        
+        ['touchend', 'mouseup', 'touchcancel'].forEach(eventType => {
+            btnUp.addEventListener(eventType, (e) => {
+                preventScroll(e);
+                this.keys['arrowup'] = false;
+            });
+            btnDown.addEventListener(eventType, (e) => {
+                preventScroll(e);
+                this.keys['arrowdown'] = false;
+            });
+            btnLeft.addEventListener(eventType, (e) => {
+                preventScroll(e);
+                this.keys['arrowleft'] = false;
+            });
+            btnRight.addEventListener(eventType, (e) => {
+                preventScroll(e);
+                this.keys['arrowright'] = false;
+            });
+        });
+        
+        // Center button (interact)
+        btnCenter.addEventListener('touchstart', (e) => {
+            preventScroll(e);
+            this.keys[' '] = true;
+        });
+        btnCenter.addEventListener('touchend', (e) => {
+            preventScroll(e);
+            this.keys[' '] = false;
+        });
+        
+        // Linguodex button
+        btnLinguodex.addEventListener('click', (e) => {
+            preventScroll(e);
+            if (this.state === 'world') {
+                this.openLinguodex();
+            }
+        });
     }
     
     gameLoop() {
@@ -196,76 +271,237 @@ class Game {
         const px = x * this.tileSize;
         const py = y * this.tileSize;
         
-        // Tile colors
-        const colors = {
-            0: '#90EE90', // grass - light green
-            1: '#DEB887', // path - tan
-            2: '#4169E1', // water - blue
-            3: '#228B22', // tree - dark green
-            4: '#8B4513', // house - brown
-            5: '#FFB6C1'  // flower - pink
-        };
-        
-        this.ctx.fillStyle = colors[type];
-        this.ctx.fillRect(px, py, this.tileSize, this.tileSize);
-        
-        // Draw details
-        this.ctx.strokeStyle = '#00000022';
-        this.ctx.strokeRect(px, py, this.tileSize, this.tileSize);
-        
-        // Add texture
+        // Base colors with gradients
         if (type === 0) { // grass
-            this.ctx.fillStyle = '#7CCD7C';
-            for (let i = 0; i < 3; i++) {
-                const gx = px + Math.random() * this.tileSize;
-                const gy = py + Math.random() * this.tileSize;
-                this.ctx.fillRect(gx, gy, 2, 2);
+            // Grass base
+            const grassGradient = this.ctx.createLinearGradient(px, py, px, py + this.tileSize);
+            grassGradient.addColorStop(0, '#7EC850');
+            grassGradient.addColorStop(1, '#5FA033');
+            this.ctx.fillStyle = grassGradient;
+            this.ctx.fillRect(px, py, this.tileSize, this.tileSize);
+            
+            // Add grass blades
+            this.ctx.fillStyle = '#6FB83F';
+            const blades = 4;
+            for (let i = 0; i < blades; i++) {
+                const bx = px + (i * 8) + 4;
+                const by = py + ((i + x + y) % 3) * 10 + 8;
+                this.ctx.fillRect(bx, by, 2, 6);
+                this.ctx.fillRect(bx + 2, by - 2, 2, 4);
             }
+            
+        } else if (type === 1) { // path
+            const pathGradient = this.ctx.createLinearGradient(px, py, px, py + this.tileSize);
+            pathGradient.addColorStop(0, '#D4A574');
+            pathGradient.addColorStop(1, '#B8935F');
+            this.ctx.fillStyle = pathGradient;
+            this.ctx.fillRect(px, py, this.tileSize, this.tileSize);
+            
+            // Add path texture (stones)
+            this.ctx.fillStyle = '#C9A06A';
+            for (let i = 0; i < 3; i++) {
+                const sx = px + ((i * 12 + x * 7) % 28) + 2;
+                const sy = py + ((i * 8 + y * 11) % 28) + 2;
+                this.ctx.fillRect(sx, sy, 3, 3);
+            }
+            
         } else if (type === 2) { // water
-            this.ctx.fillStyle = '#6495ED';
-            this.ctx.fillRect(px + 4, py + 4, this.tileSize - 8, this.tileSize - 8);
-        } else if (type === 3) { // tree
-            this.ctx.fillStyle = '#228B22';
+            const waterGradient = this.ctx.createRadialGradient(px + 16, py + 16, 0, px + 16, py + 16, 20);
+            waterGradient.addColorStop(0, '#4DA6FF');
+            waterGradient.addColorStop(1, '#2E75B5');
+            this.ctx.fillStyle = waterGradient;
             this.ctx.fillRect(px, py, this.tileSize, this.tileSize);
-            this.ctx.fillStyle = '#8B4513';
-            this.ctx.fillRect(px + 12, py + 20, 8, 12);
-        } else if (type === 4) { // house
-            this.ctx.fillStyle = '#CD853F';
-            this.ctx.fillRect(px + 4, py + 8, this.tileSize - 8, this.tileSize - 8);
-            this.ctx.fillStyle = '#8B4513';
-            this.ctx.fillRect(px + 12, py + 4, this.tileSize - 24, 8);
-        } else if (type === 5) { // flower
-            this.ctx.fillStyle = '#90EE90';
-            this.ctx.fillRect(px, py, this.tileSize, this.tileSize);
-            this.ctx.fillStyle = '#FFB6C1';
+            
+            // Add water shimmer
+            const time = Date.now() / 1000;
+            const wave = Math.sin(time * 2 + x + y) * 0.5 + 0.5;
+            this.ctx.fillStyle = `rgba(255, 255, 255, ${wave * 0.3})`;
             this.ctx.beginPath();
-            this.ctx.arc(px + 16, py + 16, 6, 0, Math.PI * 2);
+            this.ctx.arc(px + 16, py + 12, 4, 0, Math.PI * 2);
             this.ctx.fill();
+            
+        } else if (type === 3) { // tree
+            // Tree foliage
+            const treeGradient = this.ctx.createRadialGradient(px + 16, py + 12, 0, px + 16, py + 12, 16);
+            treeGradient.addColorStop(0, '#4CAF50');
+            treeGradient.addColorStop(1, '#2E7D32');
+            this.ctx.fillStyle = treeGradient;
+            this.ctx.beginPath();
+            this.ctx.arc(px + 16, py + 12, 14, 0, Math.PI * 2);
+            this.ctx.fill();
+            
+            // Tree trunk
+            const trunkGradient = this.ctx.createLinearGradient(px + 12, py + 18, px + 20, py + 18);
+            trunkGradient.addColorStop(0, '#6D4C41');
+            trunkGradient.addColorStop(1, '#5D4037');
+            this.ctx.fillStyle = trunkGradient;
+            this.ctx.fillRect(px + 12, py + 18, 8, 14);
+            
+            // Highlight on foliage
+            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+            this.ctx.beginPath();
+            this.ctx.arc(px + 12, py + 8, 5, 0, Math.PI * 2);
+            this.ctx.fill();
+            
+        } else if (type === 4) { // house
+            // House body
+            const houseGradient = this.ctx.createLinearGradient(px + 4, py + 12, px + 28, py + 12);
+            houseGradient.addColorStop(0, '#D4896B');
+            houseGradient.addColorStop(1, '#B87456');
+            this.ctx.fillStyle = houseGradient;
+            this.ctx.fillRect(px + 4, py + 12, 24, 16);
+            
+            // Roof
+            this.ctx.fillStyle = '#8B4513';
+            this.ctx.beginPath();
+            this.ctx.moveTo(px + 2, py + 12);
+            this.ctx.lineTo(px + 16, py + 4);
+            this.ctx.lineTo(px + 30, py + 12);
+            this.ctx.closePath();
+            this.ctx.fill();
+            
+            // Roof highlight
+            this.ctx.fillStyle = '#A0522D';
+            this.ctx.beginPath();
+            this.ctx.moveTo(px + 2, py + 12);
+            this.ctx.lineTo(px + 16, py + 4);
+            this.ctx.lineTo(px + 16, py + 6);
+            this.ctx.lineTo(px + 4, py + 12);
+            this.ctx.closePath();
+            this.ctx.fill();
+            
+            // Door
+            this.ctx.fillStyle = '#5D4037';
+            this.ctx.fillRect(px + 12, py + 18, 8, 10);
+            
+            // Window
+            this.ctx.fillStyle = '#FFF9C4';
+            this.ctx.fillRect(px + 20, py + 16, 5, 5);
+            
+        } else if (type === 5) { // flower
+            // Grass base
+            const flowerGrassGradient = this.ctx.createLinearGradient(px, py, px, py + this.tileSize);
+            flowerGrassGradient.addColorStop(0, '#7EC850');
+            flowerGrassGradient.addColorStop(1, '#5FA033');
+            this.ctx.fillStyle = flowerGrassGradient;
+            this.ctx.fillRect(px, py, this.tileSize, this.tileSize);
+            
+            // Flower petals
+            const time = Date.now() / 1000;
+            const wobble = Math.sin(time * 2 + x + y) * 2;
+            
+            this.ctx.fillStyle = '#FF69B4';
+            for (let i = 0; i < 6; i++) {
+                const angle = (i / 6) * Math.PI * 2 + wobble * 0.1;
+                const petalX = px + 16 + Math.cos(angle) * 6;
+                const petalY = py + 16 + Math.sin(angle) * 6;
+                this.ctx.beginPath();
+                this.ctx.arc(petalX, petalY, 4, 0, Math.PI * 2);
+                this.ctx.fill();
+            }
+            
+            // Flower center
+            this.ctx.fillStyle = '#FFD700';
+            this.ctx.beginPath();
+            this.ctx.arc(px + 16, py + 16, 3, 0, Math.PI * 2);
+            this.ctx.fill();
+            
+            // Stem
+            this.ctx.strokeStyle = '#4CAF50';
+            this.ctx.lineWidth = 2;
+            this.ctx.beginPath();
+            this.ctx.moveTo(px + 16, py + 18);
+            this.ctx.lineTo(px + 16, py + 26);
+            this.ctx.stroke();
         }
+        
+        // Border
+        this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+        this.ctx.lineWidth = 1;
+        this.ctx.strokeRect(px, py, this.tileSize, this.tileSize);
     }
     
     drawPlayer() {
         const px = this.player.x * this.tileSize;
         const py = this.player.y * this.tileSize;
+        const time = Date.now() / 500;
+        const bounce = Math.abs(Math.sin(time)) * 2;
         
-        // Draw player as a character
-        this.ctx.fillStyle = '#FF6B6B';
+        // Shadow
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
         this.ctx.beginPath();
-        this.ctx.arc(px + 16, py + 12, 8, 0, Math.PI * 2);
+        this.ctx.ellipse(px + 16, py + 30, 8, 3, 0, 0, Math.PI * 2);
         this.ctx.fill();
         
-        this.ctx.fillStyle = '#FFE66D';
-        this.ctx.fillRect(px + 10, py + 18, 12, 10);
+        // Draw player character with bounce
+        const yOffset = -bounce;
         
-        // Arms
-        this.ctx.fillStyle = '#FFE66D';
-        this.ctx.fillRect(px + 6, py + 20, 4, 6);
-        this.ctx.fillRect(px + 22, py + 20, 4, 6);
+        // Head with gradient
+        const headGradient = this.ctx.createRadialGradient(px + 16, py + 10 + yOffset, 2, px + 16, py + 10 + yOffset, 10);
+        headGradient.addColorStop(0, '#FFB6B9');
+        headGradient.addColorStop(1, '#FF6B6B');
+        this.ctx.fillStyle = headGradient;
+        this.ctx.beginPath();
+        this.ctx.arc(px + 16, py + 10 + yOffset, 9, 0, Math.PI * 2);
+        this.ctx.fill();
         
-        // Legs
-        this.ctx.fillStyle = '#4ECDC4';
-        this.ctx.fillRect(px + 10, py + 26, 5, 6);
-        this.ctx.fillRect(px + 17, py + 26, 5, 6);
+        // Eyes
+        this.ctx.fillStyle = '#FFFFFF';
+        this.ctx.beginPath();
+        this.ctx.arc(px + 13, py + 9 + yOffset, 2, 0, Math.PI * 2);
+        this.ctx.arc(px + 19, py + 9 + yOffset, 2, 0, Math.PI * 2);
+        this.ctx.fill();
+        
+        this.ctx.fillStyle = '#000000';
+        this.ctx.beginPath();
+        this.ctx.arc(px + 13, py + 10 + yOffset, 1, 0, Math.PI * 2);
+        this.ctx.arc(px + 19, py + 10 + yOffset, 1, 0, Math.PI * 2);
+        this.ctx.fill();
+        
+        // Smile
+        this.ctx.strokeStyle = '#FF4444';
+        this.ctx.lineWidth = 1;
+        this.ctx.beginPath();
+        this.ctx.arc(px + 16, py + 11 + yOffset, 3, 0, Math.PI);
+        this.ctx.stroke();
+        
+        // Body with gradient
+        const bodyGradient = this.ctx.createLinearGradient(px + 10, py + 18 + yOffset, px + 22, py + 18 + yOffset);
+        bodyGradient.addColorStop(0, '#FFE66D');
+        bodyGradient.addColorStop(1, '#FFCC00');
+        this.ctx.fillStyle = bodyGradient;
+        this.ctx.fillRect(px + 10, py + 18 + yOffset, 12, 10);
+        
+        // Arms with animation
+        const armSwing = Math.sin(time * 2) * 2;
+        this.ctx.fillStyle = '#FFE66D';
+        
+        // Left arm
+        this.ctx.save();
+        this.ctx.translate(px + 8, py + 20 + yOffset);
+        this.ctx.rotate(armSwing * 0.1);
+        this.ctx.fillRect(-2, 0, 4, 8);
+        this.ctx.restore();
+        
+        // Right arm
+        this.ctx.save();
+        this.ctx.translate(px + 24, py + 20 + yOffset);
+        this.ctx.rotate(-armSwing * 0.1);
+        this.ctx.fillRect(-2, 0, 4, 8);
+        this.ctx.restore();
+        
+        // Legs with gradient
+        const legGradient = this.ctx.createLinearGradient(px + 10, py + 26 + yOffset, px + 22, py + 26 + yOffset);
+        legGradient.addColorStop(0, '#4ECDC4');
+        legGradient.addColorStop(1, '#3BA89F');
+        this.ctx.fillStyle = legGradient;
+        this.ctx.fillRect(px + 10, py + 26 + yOffset, 5, 6);
+        this.ctx.fillRect(px + 17, py + 26 + yOffset, 5, 6);
+        
+        // Shoes
+        this.ctx.fillStyle = '#2C3E50';
+        this.ctx.fillRect(px + 10, py + 30 + yOffset, 5, 2);
+        this.ctx.fillRect(px + 17, py + 30 + yOffset, 5, 2);
     }
     
     // ============================================
