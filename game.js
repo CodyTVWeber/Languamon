@@ -1,4 +1,4 @@
-import kaboom from "https://unpkg.com/kaboom@3001.0.0/dist/kaboom.mjs";
+import kaboom from "https://unpkg.com/kaboom@3000.1.17/dist/kaboom.mjs";
 
 const TILE_SIZE = 16;
 const MOVE_SPEED = 96;
