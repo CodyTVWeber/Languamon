@@ -6,19 +6,19 @@ Quick reference for developing Linguomon.
 
 ### Running the Game
 ```bash
-cd prototype-v1
-./start-server.sh  # Interactive menu
+# Simple: just open index.html in your browser
 
-# Or directly:
+# Or with a server:
 python3 -m http.server 8000
+# Then visit: http://localhost:8000
 ```
-
-Visit: `http://localhost:8000`
 
 ### Project Structure
 ```
 /workspace/
-├── prototype-v1/       ← Current working version
+├── index.html          ← Game page
+├── style.css           ← All styling
+├── game.js             ← Game logic
 ├── README.md           ← Project overview
 ├── ROADMAP.md          ← Future planning
 └── DEVELOPMENT.md      ← This file
@@ -30,7 +30,7 @@ Visit: `http://localhost:8000`
 
 ### Adding a New Word
 
-Edit `prototype-v1/game.js`, find `initLinguomon()`:
+Edit `game.js`, find `initLinguomon()`:
 
 ```javascript
 this.linguomonDatabase = [
@@ -116,7 +116,7 @@ body {
 
 ### Adding Sound Effects
 
-1. Add audio files to `prototype-v1/sounds/`
+1. Add audio files to `sounds/` folder (create it first)
 2. In `game.js`, add at top:
 
 ```javascript

@@ -7,21 +7,21 @@ Catch words, learn languages, and become a Linguomon master!
 
 ```
 /workspace
-├── prototype-v1/          # Vanilla JS proof of concept
-│   ├── index.html         # Main game page
-│   ├── style.css          # Game styling
-│   └── game.js            # Core game logic
-│
-└── (future versions)      # React/Phaser versions as we scale up
+├── index.html             # Main game page
+├── style.css              # Game styling
+├── game.js                # Core game logic
+├── README.md              # This file
+├── DEVELOPMENT.md         # Developer guide
+├── ROADMAP.md             # Future plans
+└── START_HERE.md          # Getting started guide
 ```
 
 ## 🚀 Quick Start
 
-### Running the Prototype
+### Running the Game
 ```bash
-cd prototype-v1
 # Open index.html in your browser or use a local server:
-python -m http.server 8000
+python3 -m http.server 8000
 # Then visit: http://localhost:8000
 ```
 
@@ -40,7 +40,7 @@ Linguomon is a Pokemon-style language learning game where:
 - **L Key** - Open Linguodex (collection)
 - **Mouse/Click** - Battle interactions
 
-## 🌟 Current Features (Prototype v1)
+## 🌟 Current Features
 
 ✅ Tile-based overworld with player movement
 ✅ Random encounters in grass tiles  
@@ -52,16 +52,16 @@ Linguomon is a Pokemon-style language learning game where:
 ✅ Battle with collected words
 ✅ Type effectiveness system
 
-## 🛠️ Tech Stack Evolution
+## 🛠️ Tech Stack
 
-### Prototype v1 (Current)
+### Current
 - **Vanilla JavaScript** - Core game logic
 - **HTML5 Canvas** - Graphics rendering
 - **CSS3** - UI styling
 
-### Future Options
-- **React version** - Better UI/state management
-- **Phaser.js version** - Professional game framework
+### Future Options (see ROADMAP.md)
+- **React** - Better UI/state management
+- **Phaser.js** - Professional game framework
 - **Backend API** - User progress, multiplayer, more words
 
 ## 📚 Game Mechanics

@@ -6,27 +6,24 @@ Welcome to Linguomon! A Pokemon-style language learning game.
 
 ### Play Right Now
 ```bash
-cd prototype-v1
-./start-server.sh
-```
-Then visit: http://localhost:8000
+# Option 1: Just open index.html in your browser
+open index.html  # or double-click it
 
-### Or Just Open in Browser
-```bash
-cd prototype-v1
-# Double-click index.html or drag it into your browser
+# Option 2: Run with a local server
+python3 -m http.server 8000
+# Then visit: http://localhost:8000
 ```
 
 ---
 
 ## 📚 Documentation Guide
 
-### 🎮 **PLAY.md** - How to Play
-**Start here if you just want to play!**
-- Game controls
-- Battle mechanics
-- Tips and strategies
-- FAQ
+### 🎮 **To Play the Game**
+**Just want to play?**
+- Open `index.html` in your browser
+- Use Arrow Keys or WASD to move
+- Walk through grass to find Linguomon
+- Answer quiz questions to catch them!
 
 ### 📖 **README.md** - Project Overview
 **Read this for the big picture**
@@ -34,6 +31,7 @@ cd prototype-v1
 - Current features
 - Technology choices
 - Project structure
+- Game mechanics
 
 ### 🛠️ **DEVELOPMENT.md** - Developer Guide
 **Read this if you want to modify the game**
@@ -41,6 +39,7 @@ cd prototype-v1
 - How to change maps
 - Debugging tips
 - Code customization
+- Performance tips
 
 ### 🗺️ **ROADMAP.md** - Future Plans
 **Read this to see where we're going**
@@ -48,13 +47,7 @@ cd prototype-v1
 - When to use different technologies
 - Feature ideas
 - Timeline estimates
-
-### 📂 **prototype-v1/README.md** - Technical Details
-**Read this for code architecture**
-- File structure
-- Code organization
-- How systems work
-- Extension guide
+- Technology decision points
 
 ---
 
@@ -103,9 +96,9 @@ cd prototype-v1
 ## 🤔 What Should I Do First?
 
 ### If You Want to PLAY:
-1. Read **PLAY.md**
-2. Run the game
-3. Catch some words!
+1. Open **index.html** in your browser
+2. Use Arrow Keys or WASD to move
+3. Walk through grass to find words!
 
 ### If You Want to DEVELOP:
 1. Read **README.md** (overview)
@@ -115,9 +108,8 @@ cd prototype-v1
 
 ### If You Want to UNDERSTAND:
 1. Read **README.md**
-2. Read **prototype-v1/README.md**
-3. Look through the code
-4. Run and experiment!
+2. Look through **game.js**
+3. Run and experiment!
 
 ### If You Want to PLAN:
 1. Read **ROADMAP.md**
@@ -131,7 +123,7 @@ cd prototype-v1
 
 ```
 ✅ Phase 0: Concept & Planning - COMPLETE
-✅ Phase 1: Prototype v1 - COMPLETE (YOU ARE HERE!)
+✅ Phase 1: Core Game - COMPLETE (YOU ARE HERE!)
 ⏳ Phase 2: Polish & Testing - NEXT
 🔮 Phase 3: React Migration - FUTURE
 🔮 Phase 4: Enhanced Features - FUTURE
@@ -227,18 +219,14 @@ READY FOR LAUNCH! 🎉
 ```
 /workspace/
 │
+├── index.html             ← Game page - OPEN THIS TO PLAY!
+├── style.css              ← All styling
+├── game.js                ← Game logic (~600 lines)
 ├── START_HERE.md          ← You are here!
 ├── README.md              ← Project overview
 ├── ROADMAP.md             ← Future planning
 ├── DEVELOPMENT.md         ← Developer guide
-│
-└── prototype-v1/          ← THE GAME
-    ├── index.html         ← Game page
-    ├── style.css          ← All styling
-    ├── game.js            ← Game logic (~600 lines)
-    ├── start-server.sh    ← Helper script
-    ├── README.md          ← Technical docs
-    └── PLAY.md            ← How to play
+└── PROJECT_SUMMARY.txt   ← Quick reference
 ```
 
 ---
@@ -247,22 +235,17 @@ READY FOR LAUNCH! 🎉
 
 ```bash
 # Run the game
-cd prototype-v1 && python3 -m http.server 8000
+python3 -m http.server 8000
 
 # View a specific guide
-cat PLAY.md              # How to play
 cat README.md            # Overview
 cat DEVELOPMENT.md       # Development
 cat ROADMAP.md           # Future plans
 
 # Edit game files
-vim prototype-v1/game.js     # Game logic
-vim prototype-v1/style.css   # Styling
-vim prototype-v1/index.html  # HTML structure
-
-# Start developing
-cd prototype-v1
-# Open files in your favorite editor!
+vim game.js              # Game logic
+vim style.css            # Styling
+vim index.html           # HTML structure
 ```
 
 ---
