@@ -1,1230 +1,1083 @@
-// =============================================================
-// Linguomon: Word League Adventure
-// Core game script - overworld, encounters, battles and UI glue
-// =============================================================
+import kaboom from "https://unpkg.com/kaboom@3001.0.0/dist/kaboom.mjs";
 
-const TILE_TYPES = {
-    GRASS: 0,
-    PATH: 1,
-    WATER: 2,
-    TREE: 3,
-    HOUSE: 4,
-    FLOWER: 5,
+const TILE_SIZE = 16;
+const MOVE_SPEED = 96;
+const MAX_HUD_LOG = 4;
+
+const PALETTE = {
+    darkest: "#081a0c",
+    dark: "#123821",
+    mid: "#2f5c31",
+    light: "#78a943",
+    highlight: "#d8f97b",
+    accent: "#f4f7d2",
+    muted: "#9bb894",
+    earth: "#6f5a3c",
+    water: "#2c4a6f",
+    bloom: "#b04b8a",
 };
 
 const MAP_LAYOUT = [
-    [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3],
-    [3, 0, 0, 5, 0, 0, 0, 1, 1, 1, 0, 0, 0, 5, 0, 0, 3],
-    [3, 0, 4, 4, 0, 0, 0, 1, 4, 1, 0, 0, 0, 4, 4, 0, 3],
-    [3, 0, 4, 4, 0, 0, 0, 1, 1, 1, 0, 0, 0, 4, 4, 0, 3],
-    [3, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 3],
-    [3, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 3],
-    [3, 0, 5, 0, 0, 1, 0, 2, 2, 2, 0, 0, 5, 0, 0, 0, 3],
-    [3, 0, 0, 0, 0, 1, 0, 2, 5, 2, 0, 0, 0, 0, 0, 0, 3],
-    [3, 0, 0, 0, 0, 1, 0, 2, 2, 2, 0, 0, 0, 0, 0, 5, 3],
-    [3, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 3],
-    [3, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 3],
-    [3, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 3],
-    [3, 0, 5, 0, 0, 0, 0, 1, 0, 5, 0, 0, 0, 5, 0, 0, 3],
-    [3, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 3],
-    [3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3],
+    "TTTTTTTTTTTTTTTTTT",
+    "TGGGGGPPPPPPPPGGGT",
+    "TGPPPGGGGGGGGGPPGT",
+    "TGPPWWGGGGTTGGPPGT",
+    "TGPPPSPFGGTGGPPPGT",
+    "TGGGGGGGGGTGGGGGGT",
+    "TGGGGGGGGGTGGGPPGT",
+    "TGPPPPPPPPPPPPPPGT",
+    "TGGGGGGGGGGGGGGGGT",
+    "TTTTTTTTTTTTTTTTTT",
 ];
 
-const ENCOUNTER_RATES = {
-    [TILE_TYPES.GRASS]: 0.14,
-    [TILE_TYPES.FLOWER]: 0.22,
-    [TILE_TYPES.PATH]: 0.03,
-};
-
-const FALLBACK_WRONGS = [
-    'dawn',
-    'compass',
-    'friend',
-    'music',
-    'wind',
-    'planet',
-    'candle',
-    'bridge',
-    'journey',
-    'circle',
-];
+const SIGN_TEXT = new Map([
+    [
+        "5,4",
+        [
+            "Trail Sign: Press SPACE to interact or continue dialogue.",
+            "Step into shimmering grass to test your vocabulary skills.",
+        ],
+    ],
+    [
+        "7,4",
+        [
+            "Tip: Use the L key to review the words you've already captured.",
+            "Level up by answering correctly to raise encounter variety.",
+        ],
+    ],
+]);
 
 const LANGUAGE_TRACKS = [
     {
-        id: 'spanish',
-        name: 'Spanish',
-        emoji: '🇪🇸',
-        difficulty: 'Beginner',
-        region: 'Valle Verde',
-        tagline: 'Warm greetings, everyday words, and sunny vibes.',
-        habitats: [TILE_TYPES.GRASS, TILE_TYPES.FLOWER],
+        id: "spanish",
+        name: "Español",
+        region: "Valle Verde",
+        description: "Sunny greetings and everyday essentials from the valley.",
+        intro: [
+            "¡Bienvenido! Valle Verde hums with friendly Spanish.",
+            "Walk through the tall grass to meet words in the wild.",
+            "Answer correctly to build your LexiLog and gain confidence.",
+        ],
         lexicon: [
-            { id: 'es-hola', word: 'hola', translation: 'hello', emoji: '👋', type: 'greeting', level: 1, clue: 'The first thing you say to new friends.' },
-            { id: 'es-adios', word: 'adiós', translation: 'goodbye', emoji: '👋', type: 'greeting', level: 1, clue: 'Wave when you leave.' },
-            { id: 'es-gato', word: 'gato', translation: 'cat', emoji: '🐱', type: 'animal', level: 1, clue: 'Soft paws and a curious tail.' },
-            { id: 'es-casa', word: 'casa', translation: 'house', emoji: '🏠', type: 'place', level: 1, clue: 'Where you keep all your stuff.' },
-            { id: 'es-agua', word: 'agua', translation: 'water', emoji: '💧', type: 'nature', level: 1, clue: 'Stay hydrated!' },
-            { id: 'es-libro', word: 'libro', translation: 'book', emoji: '📚', type: 'object', level: 2, clue: 'Words bound together.' },
-            { id: 'es-amigo', word: 'amigo', translation: 'friend', emoji: '🤝', type: 'social', level: 2, clue: 'Adventure buddy.' },
-            { id: 'es-desayuno', word: 'desayuno', translation: 'breakfast', emoji: '🥐', type: 'food', level: 2, clue: 'Fuel for the morning.' },
+            { id: "es-hola", word: "hola", translation: "hello", part: "greeting", clue: "Friendly hello you use all day." },
+            { id: "es-adios", word: "adiós", translation: "goodbye", part: "greeting", clue: "A wave as you head out." },
+            { id: "es-gracias", word: "gracias", translation: "thank you", part: "expression", clue: "Grateful magic word." },
+            { id: "es-pan", word: "pan", translation: "bread", part: "food", clue: "Fresh from the bakery." },
+            { id: "es-agua", word: "agua", translation: "water", part: "nature", clue: "Crystal clear hydration." },
+            { id: "es-gato", word: "gato", translation: "cat", part: "creature", clue: "Soft paws and curious whiskers." },
+            { id: "es-libro", word: "libro", translation: "book", part: "object", clue: "Pages filled with stories." },
+            { id: "es-escuchar", word: "escuchar", translation: "to listen", part: "verb", clue: "Use your ears." },
         ],
     },
     {
-        id: 'french',
-        name: 'French',
-        emoji: '🇫🇷',
-        difficulty: 'Beginner+',
-        region: 'Riviera Bleu',
-        tagline: 'Polite phrases and cafe conversation starters.',
-        habitats: [TILE_TYPES.GRASS, TILE_TYPES.PATH],
+        id: "french",
+        name: "Français",
+        region: "Riviera Bleu",
+        description: "Café conversations, polite phrases, and cozy comforts.",
+        intro: [
+            "Bienvenue à la Riviera Bleu! The air buzzes with French phrases.",
+            "Polish your listening — the right answers will capture new words.",
+            "Keep moving, keep practicing. Your accent mark adventure starts now!",
+        ],
         lexicon: [
-            { id: 'fr-bonjour', word: 'bonjour', translation: 'hello', emoji: '☀️', type: 'greeting', level: 1, clue: 'Good day!' },
-            { id: 'fr-merci', word: 'merci', translation: 'thank you', emoji: '🙏', type: 'greeting', level: 1, clue: 'Grateful nod.' },
-            { id: 'fr-chat', word: 'chat', translation: 'cat', emoji: '🐱', type: 'animal', level: 1, clue: 'Purring friend.' },
-            { id: 'fr-maison', word: 'maison', translation: 'house', emoji: '🏠', type: 'place', level: 1, clue: 'Home sweet home.' },
-            { id: 'fr-eau', word: 'eau', translation: 'water', emoji: '💧', type: 'nature', level: 2, clue: 'Crystal clear hydration.' },
-            { id: 'fr-fromage', word: 'fromage', translation: 'cheese', emoji: '🧀', type: 'food', level: 2, clue: 'Pairs well with bread.' },
-            { id: 'fr-pain', word: 'pain', translation: 'bread', emoji: '🥖', type: 'food', level: 2, clue: 'Fresh baguette aroma.' },
+            { id: "fr-bonjour", word: "bonjour", translation: "hello", part: "greeting", clue: "Good day with a smile." },
+            { id: "fr-merci", word: "merci", translation: "thank you", part: "expression", clue: "Polite gratitude." },
+            { id: "fr-au-revoir", word: "au revoir", translation: "goodbye", part: "greeting", clue: "Until we meet again." },
+            { id: "fr-eau", word: "eau", translation: "water", part: "nature", clue: "Quietly flowing." },
+            { id: "fr-pain", word: "pain", translation: "bread", part: "food", clue: "Fresh baguette aroma." },
+            { id: "fr-chat", word: "chat", translation: "cat", part: "creature", clue: "Gentle purrs by the window." },
+            { id: "fr-livre", word: "livre", translation: "book", part: "object", clue: "Stories in neat columns." },
+            { id: "fr-ecouter", word: "écouter", translation: "to listen", part: "verb", clue: "Lean in to hear." },
         ],
     },
     {
-        id: 'german',
-        name: 'German',
-        emoji: '🇩🇪',
-        difficulty: 'Intermediate',
-        region: 'Wanderwald',
-        tagline: 'Precise nouns and sturdy everyday expressions.',
-        habitats: [TILE_TYPES.GRASS, TILE_TYPES.FLOWER],
-        lexicon: [
-            { id: 'de-hallo', word: 'hallo', translation: 'hello', emoji: '👋', type: 'greeting', level: 1, clue: 'Friendly wave.' },
-            { id: 'de-bitte', word: 'bitte', translation: 'please', emoji: '🙂', type: 'social', level: 1, clue: 'Magic polite word.' },
-            { id: 'de-danke', word: 'danke', translation: 'thank you', emoji: '🙏', type: 'social', level: 1, clue: 'Show appreciation.' },
-            { id: 'de-katze', word: 'Katze', translation: 'cat', emoji: '🐱', type: 'animal', level: 2, clue: 'Curious whiskers.' },
-            { id: 'de-haus', word: 'Haus', translation: 'house', emoji: '🏠', type: 'place', level: 2, clue: 'Four walls and a roof.' },
-            { id: 'de-wasser', word: 'Wasser', translation: 'water', emoji: '💧', type: 'nature', level: 2, clue: 'Essential for life.' },
-            { id: 'de-brot', word: 'Brot', translation: 'bread', emoji: '🍞', type: 'food', level: 2, clue: 'Fresh loaf smell.' },
-            { id: 'de-buch', word: 'Buch', translation: 'book', emoji: '📚', type: 'object', level: 3, clue: 'Full of stories.' },
+        id: "japanese",
+        name: "日本語",
+        region: "Hikari Trails",
+        description: "Kana fireflies, soothing nature, and expressive verbs.",
+        intro: [
+            "ようこそ! The Hikari Trails glow with flowing Japanese.",
+            "Kana creatures appear in the tall grass when you explore.",
+            "Answer with care — each success lights up your LexiLog.",
         ],
-    },
-    {
-        id: 'japanese',
-        name: 'Japanese',
-        emoji: '🇯🇵',
-        difficulty: 'Intermediate+',
-        region: 'Hikari Trails',
-        tagline: 'Friendly kana words to light your path.',
-        habitats: [TILE_TYPES.GRASS, TILE_TYPES.FLOWER, TILE_TYPES.PATH],
         lexicon: [
-            { id: 'jp-konnichiwa', word: 'こんにちは', translation: 'hello', emoji: '🌸', type: 'greeting', level: 1, clue: 'Midday greeting.' },
-            { id: 'jp-arigato', word: 'ありがとう', translation: 'thank you', emoji: '🎎', type: 'social', level: 1, clue: 'Grateful bow.' },
-            { id: 'jp-neko', word: 'ねこ', translation: 'cat', emoji: '🐱', type: 'animal', level: 2, clue: 'Clever whiskers.' },
-            { id: 'jp-mizu', word: 'みず', translation: 'water', emoji: '💧', type: 'nature', level: 2, clue: 'Crystal clear.' },
-            { id: 'jp-hon', word: 'ほん', translation: 'book', emoji: '📚', type: 'object', level: 2, clue: 'Knowledge bound.' },
-            { id: 'jp-sora', word: 'そら', translation: 'sky', emoji: '☁️', type: 'nature', level: 3, clue: 'Look up!' },
-            { id: 'jp-gohan', word: 'ごはん', translation: 'rice', emoji: '🍙', type: 'food', level: 3, clue: 'Staple meal.' },
+            { id: "jp-ohayo", word: "おはよう", translation: "good morning", part: "greeting", clue: "Sunrise salute." },
+            { id: "jp-konnichiwa", word: "こんにちは", translation: "hello", part: "greeting", clue: "Midday hello." },
+            { id: "jp-arigato", word: "ありがとう", translation: "thank you", part: "expression", clue: "Polite bow." },
+            { id: "jp-neko", word: "ねこ", translation: "cat", part: "creature", clue: "Soft paws." },
+            { id: "jp-mizu", word: "みず", translation: "water", part: "nature", clue: "Flowing and clear." },
+            { id: "jp-hon", word: "ほん", translation: "book", part: "object", clue: "Layers of stories." },
+            { id: "jp-taberu", word: "たべる", translation: "to eat", part: "verb", clue: "Verb for mealtime." },
+            { id: "jp-kiiro", word: "きいろ", translation: "yellow", part: "adjective", clue: "Bright like ginkgo leaves." },
         ],
     },
 ];
 
-const ALL_WORDS = LANGUAGE_TRACKS.flatMap(track =>
-    track.lexicon.map(word => ({
-        ...word,
-        language: track.name,
-        trackId: track.id,
-    })),
-);
+const TOTAL_GLOBAL_WORDS = LANGUAGE_TRACKS.reduce((sum, track) => sum + track.lexicon.length, 0);
 
-function randomChoice(array) {
-    return array[Math.floor(Math.random() * array.length)];
+const kb = kaboom({
+    root: document.querySelector("#game-root"),
+    width: 240,
+    height: 160,
+    scale: 4,
+    letterbox: true,
+    crisp: true,
+    background: [18, 46, 26],
+    debug: false,
+});
+
+kb.setGravity(0);
+
+const {
+    add,
+    addLevel,
+    anchor,
+    area,
+    camPos,
+    camScale,
+    color,
+    dt,
+    fixed,
+    go,
+    isKeyDown,
+    onKeyPress,
+    pos,
+    rect,
+    rgb,
+    scene,
+    solid,
+    sprite,
+    text,
+    vec2,
+    wait,
+    width,
+    height,
+    z,
+    outline,
+} = kb;
+
+const state = {
+    trackId: null,
+    playerTile: vec2(8, 7),
+    facing: "down",
+    level: 1,
+    xp: 0,
+    encounterCooldown: 0,
+    discovered: new Set(),
+    captured: new Set(),
+    log: [],
+};
+
+const NPCS = [
+    {
+        id: "professor",
+        tile: vec2(14, 6),
+        facing: "left",
+        lines: [
+            "Professor Lexica: Words roam wild out here.",
+            "Drop into the grass and answer clearly to win their trust.",
+            "Your LexiLog records every victory — keep it glowing!",
+        ],
+    },
+];
+
+const hudNodes = {
+    track: document.getElementById("hud-track"),
+    progress: document.getElementById("hud-progress"),
+    level: document.getElementById("hud-level"),
+    feed: document.getElementById("hud-feed"),
+};
+
+function getActiveTrack() {
+    return LANGUAGE_TRACKS.find(track => track.id === state.trackId) || null;
 }
 
-function shuffle(array) {
-    const copy = [...array];
-    for (let i = copy.length - 1; i > 0; i--) {
+function updateHud() {
+    const track = getActiveTrack();
+    if (hudNodes.track) {
+        hudNodes.track.textContent = track
+            ? `Track: ${track.name} — ${track.region}`
+            : "Track: —";
+    }
+    if (hudNodes.progress) {
+        if (track) {
+            const caught = track.lexicon.filter(word => state.captured.has(word.id)).length;
+            hudNodes.progress.textContent = `Lexicon: ${caught}/${track.lexicon.length}`;
+        } else {
+            hudNodes.progress.textContent = `Lexicon: 0/${TOTAL_GLOBAL_WORDS}`;
+        }
+    }
+    if (hudNodes.level) {
+        hudNodes.level.textContent = `Rank: ${state.level}`;
+    }
+    if (hudNodes.feed) {
+        hudNodes.feed.innerHTML = state.log
+            .slice(0, MAX_HUD_LOG)
+            .map(entry => `<p>${entry}</p>`)
+            .join("");
+    }
+}
+
+function logMessage(message) {
+    state.log.unshift(message);
+    if (state.log.length > MAX_HUD_LOG) {
+        state.log.length = MAX_HUD_LOG;
+    }
+    updateHud();
+}
+
+function resetForTrack(track) {
+    state.trackId = track.id;
+    state.playerTile = vec2(8, 7);
+    state.facing = "down";
+    state.level = 1;
+    state.xp = 0;
+    state.encounterCooldown = 2;
+    state.discovered.clear();
+    state.captured.clear();
+    state.log = [];
+    logMessage(`Welcome to ${track.region}!`);
+    logMessage(track.description);
+    updateHud();
+}
+
+function randomChoice(list) {
+    return list[Math.floor(Math.random() * list.length)];
+}
+
+function shuffle(list) {
+    const arr = [...list];
+    for (let i = arr.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
-        [copy[i], copy[j]] = [copy[j], copy[i]];
+        [arr[i], arr[j]] = [arr[j], arr[i]];
     }
-    return copy;
+    return arr;
 }
 
-function pickWrongAnswers(values, correct, count) {
-    const unique = Array.from(new Set(values.filter(v => v && v !== correct)));
+function pickDistractors(list, correct, count) {
+    const unique = Array.from(new Set(list.filter(entry => entry !== correct)));
     const shuffled = shuffle(unique);
-    const result = [];
-    while (shuffled.length && result.length < count) {
+    const picks = [];
+    while (picks.length < count && shuffled.length) {
         const candidate = shuffled.shift();
-        if (!result.includes(candidate) && candidate !== correct) {
-            result.push(candidate);
+        if (!picks.includes(candidate) && candidate !== correct) {
+            picks.push(candidate);
         }
     }
-    let fallbackIndex = 0;
-    while (result.length < count && fallbackIndex < FALLBACK_WRONGS.length) {
-        const fallback = FALLBACK_WRONGS[fallbackIndex++];
-        if (fallback !== correct && !result.includes(fallback)) {
-            result.push(fallback);
-        }
-    }
-    return result.slice(0, count);
+    return picks;
 }
 
-class Game {
-    constructor() {
-        this.canvas = document.getElementById('gameCanvas');
-        this.ctx = this.canvas.getContext('2d');
-        this.tileSize = 32;
-        this.map = MAP_LAYOUT;
-        this.mapHeight = this.map.length;
-        this.mapWidth = this.map[0].length;
+function mapSize() {
+    return {
+        width: MAP_LAYOUT[0].length,
+        height: MAP_LAYOUT.length,
+    };
+}
 
-        this.state = 'start'; // start | world | battle | dialogue
-        this.player = {
-            x: 8,
-            y: 11,
-            direction: 'down',
-            level: 1,
-            experience: 0,
-            languageTrack: null,
-        };
+function tileInBounds(tile) {
+    const { width: w, height: h } = mapSize();
+    return tile.x >= 0 && tile.x < w && tile.y >= 0 && tile.y < h;
+}
 
-        this.keys = {};
-        this.moveDelay = 150;
-        this.moveCooldown = 0;
-        this.stepsSinceEncounter = 3;
+function tileChar(tile) {
+    if (!tileInBounds(tile)) return "T";
+    return MAP_LAYOUT[tile.y][tile.x];
+}
 
-        this.seenWordIds = new Set();
-        this.caughtWordIds = new Set();
-        this.collectedLinguomon = [];
+function isPassable(tile) {
+    const char = tileChar(tile);
+    return char === "G" || char === "P" || char === "F" || char === "S";
+}
 
-        this.currentBattle = null;
-        this.currentQuiz = null;
-        this.dialogueQueue = [];
-        this.dialogueCallback = null;
+function tileToWorld(tile) {
+    return vec2(tile.x * TILE_SIZE + TILE_SIZE / 2, tile.y * TILE_SIZE + TILE_SIZE / 2);
+}
 
-        this.pendingTimeouts = [];
-        this.activeToastTimer = null;
-        this.lastFrameTime = performance.now();
-
-        this.ui = {
-            battleScreen: document.getElementById('battleScreen'),
-            battleMessage: document.getElementById('battleMessage'),
-            battleMenu: document.getElementById('battleMenu'),
-            answerBtn: document.getElementById('answerBtn'),
-            catchBtn: document.getElementById('catchBtn'),
-            studyBtn: document.getElementById('studyBtn'),
-            runBtn: document.getElementById('runBtn'),
-            quizSection: document.getElementById('quizSection'),
-            quizQuestion: document.getElementById('quizQuestion'),
-            quizAnswers: document.getElementById('quizAnswers'),
-            wordSelection: document.getElementById('wordSelection'),
-            wordList: document.getElementById('wordList'),
-            backBtn: document.getElementById('backBtn'),
-            playerConfidence: document.getElementById('playerConfidence'),
-            enemyConfidence: document.getElementById('enemyConfidence'),
-            enemySprite: document.getElementById('enemySprite'),
-            enemyName: document.getElementById('enemyName'),
-            enemyWord: document.getElementById('enemyWord'),
-            enemyLevel: document.getElementById('enemyLevel'),
-            playerBattleLevel: document.getElementById('playerBattleLevel'),
-            linguodexCount: document.getElementById('linguodex-count'),
-            playerLevel: document.getElementById('player-level'),
-            playerLanguage: document.getElementById('player-language'),
-            startScreen: document.getElementById('startScreen'),
-            languageChoices: document.getElementById('languageChoices'),
-            randomLanguageBtn: document.getElementById('randomLanguageBtn'),
-            dialogueOverlay: document.getElementById('dialogueOverlay'),
-            dialogueText: document.getElementById('dialogueText'),
-            dialoguePortrait: document.getElementById('dialoguePortrait'),
-            dialogueNextBtn: document.getElementById('dialogueNextBtn'),
-            linguodexScreen: document.getElementById('linguodexScreen'),
-            linguodexList: document.getElementById('linguodexList'),
-            closeLinguodex: document.getElementById('closeLinguodex'),
-            toast: document.getElementById('toast'),
-            btnLinguodex: document.getElementById('btnLinguodex'),
-        };
-
-        this.populateLanguageChoices();
-        this.initEventListeners();
-        this.initMobileControls();
-        this.updateUI();
-        this.gameLoop();
+function gainExperience(amount) {
+    state.xp += amount;
+    const newLevel = Math.floor(state.xp / 80) + 1;
+    if (newLevel > state.level) {
+        state.level = newLevel;
+        logMessage(`Rank up! You reached level ${state.level}.`);
     }
+    updateHud();
+}
 
-    gameLoop(timestamp = performance.now()) {
-        const delta = timestamp - this.lastFrameTime;
-        this.lastFrameTime = timestamp;
+function pickWordForEncounter(track) {
+    const unknown = track.lexicon.filter(word => !state.captured.has(word.id));
+    const pool = unknown.length ? unknown : track.lexicon;
+    return randomChoice(pool);
+}
 
-        this.update(delta);
-        this.render();
-
-        requestAnimationFrame(t => this.gameLoop(t));
+function generateQuestion(word, track) {
+    const templates = ["toEnglish", "toForeign"];
+    const parts = Array.from(new Set(track.lexicon.map(entry => entry.part))).filter(Boolean);
+    if (parts.length >= 3 && word.part) {
+        templates.push("category");
     }
-
-    update(delta) {
-        if (this.state === 'world') {
-            this.moveCooldown = Math.max(0, this.moveCooldown - delta);
-            this.handleMovement();
-        }
-    }
-
-    render() {
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-
-        for (let y = 0; y < this.mapHeight; y++) {
-            for (let x = 0; x < this.mapWidth; x++) {
-                this.drawTile(x, y, this.map[y][x]);
-            }
-        }
-
-        if (this.state !== 'start') {
-            this.drawPlayer();
-        } else {
-            this.drawPlayer();
-        }
-    }
-
-    drawTile(x, y, type) {
-        const px = x * this.tileSize;
-        const py = y * this.tileSize;
-        const ctx = this.ctx;
-
-        if (type === TILE_TYPES.GRASS) {
-            const grad = ctx.createLinearGradient(px, py, px, py + this.tileSize);
-            grad.addColorStop(0, '#7EC850');
-            grad.addColorStop(1, '#5FA033');
-            ctx.fillStyle = grad;
-            ctx.fillRect(px, py, this.tileSize, this.tileSize);
-
-            ctx.fillStyle = '#6FB83F';
-            const blades = 4;
-            for (let i = 0; i < blades; i++) {
-                const bx = px + (i * 8) + 4;
-                const by = py + ((i + x + y) % 3) * 10 + 8;
-                ctx.fillRect(bx, by, 2, 6);
-                ctx.fillRect(bx + 2, by - 2, 2, 4);
-            }
-        } else if (type === TILE_TYPES.PATH) {
-            const grad = ctx.createLinearGradient(px, py, px, py + this.tileSize);
-            grad.addColorStop(0, '#D4A574');
-            grad.addColorStop(1, '#B8935F');
-            ctx.fillStyle = grad;
-            ctx.fillRect(px, py, this.tileSize, this.tileSize);
-
-            ctx.fillStyle = '#C9A06A';
-            for (let i = 0; i < 3; i++) {
-                const sx = px + ((i * 12 + x * 7) % 28) + 2;
-                const sy = py + ((i * 8 + y * 11) % 28) + 2;
-                ctx.fillRect(sx, sy, 3, 3);
-            }
-        } else if (type === TILE_TYPES.WATER) {
-            const grad = ctx.createRadialGradient(px + 16, py + 16, 0, px + 16, py + 16, 20);
-            grad.addColorStop(0, '#4DA6FF');
-            grad.addColorStop(1, '#2E75B5');
-            ctx.fillStyle = grad;
-            ctx.fillRect(px, py, this.tileSize, this.tileSize);
-
-            const time = Date.now() / 1000;
-            const wave = Math.sin(time * 2 + x + y) * 0.5 + 0.5;
-            ctx.fillStyle = `rgba(255, 255, 255, ${wave * 0.3})`;
-            ctx.beginPath();
-            ctx.arc(px + 16, py + 12, 4, 0, Math.PI * 2);
-            ctx.fill();
-        } else if (type === TILE_TYPES.TREE) {
-            const foliage = ctx.createRadialGradient(px + 16, py + 12, 0, px + 16, py + 12, 16);
-            foliage.addColorStop(0, '#4CAF50');
-            foliage.addColorStop(1, '#2E7D32');
-            ctx.fillStyle = foliage;
-            ctx.beginPath();
-            ctx.arc(px + 16, py + 12, 14, 0, Math.PI * 2);
-            ctx.fill();
-
-            const trunk = ctx.createLinearGradient(px + 12, py + 18, px + 20, py + 18);
-            trunk.addColorStop(0, '#6D4C41');
-            trunk.addColorStop(1, '#5D4037');
-            ctx.fillStyle = trunk;
-            ctx.fillRect(px + 12, py + 18, 8, 14);
-
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-            ctx.beginPath();
-            ctx.arc(px + 12, py + 8, 5, 0, Math.PI * 2);
-            ctx.fill();
-        } else if (type === TILE_TYPES.HOUSE) {
-            const body = ctx.createLinearGradient(px + 4, py + 12, px + 28, py + 12);
-            body.addColorStop(0, '#D4896B');
-            body.addColorStop(1, '#B87456');
-            ctx.fillStyle = body;
-            ctx.fillRect(px + 4, py + 12, 24, 16);
-
-            ctx.fillStyle = '#8B4513';
-            ctx.beginPath();
-            ctx.moveTo(px + 2, py + 12);
-            ctx.lineTo(px + 16, py + 4);
-            ctx.lineTo(px + 30, py + 12);
-            ctx.closePath();
-            ctx.fill();
-
-            ctx.fillStyle = '#A0522D';
-            ctx.beginPath();
-            ctx.moveTo(px + 2, py + 12);
-            ctx.lineTo(px + 16, py + 4);
-            ctx.lineTo(px + 16, py + 6);
-            ctx.lineTo(px + 4, py + 12);
-            ctx.closePath();
-            ctx.fill();
-
-            ctx.fillStyle = '#5D4037';
-            ctx.fillRect(px + 12, py + 18, 8, 10);
-
-            ctx.fillStyle = '#FFF9C4';
-            ctx.fillRect(px + 20, py + 16, 5, 5);
-        } else if (type === TILE_TYPES.FLOWER) {
-            const grad = ctx.createLinearGradient(px, py, px, py + this.tileSize);
-            grad.addColorStop(0, '#7EC850');
-            grad.addColorStop(1, '#5FA033');
-            ctx.fillStyle = grad;
-            ctx.fillRect(px, py, this.tileSize, this.tileSize);
-
-            const time = Date.now() / 1000;
-            const wobble = Math.sin(time * 2 + x + y) * 2;
-            ctx.fillStyle = '#FF69B4';
-            for (let i = 0; i < 6; i++) {
-                const angle = (i / 6) * Math.PI * 2 + wobble * 0.1;
-                const petalX = px + 16 + Math.cos(angle) * 6;
-                const petalY = py + 16 + Math.sin(angle) * 6;
-                ctx.beginPath();
-                ctx.arc(petalX, petalY, 4, 0, Math.PI * 2);
-                ctx.fill();
-            }
-
-            ctx.fillStyle = '#FFD700';
-            ctx.beginPath();
-            ctx.arc(px + 16, py + 16, 3, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.strokeStyle = '#4CAF50';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(px + 16, py + 18);
-            ctx.lineTo(px + 16, py + 26);
-            ctx.stroke();
-        }
-
-        ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(px, py, this.tileSize, this.tileSize);
-    }
-
-    drawPlayer() {
-        const px = this.player.x * this.tileSize;
-        const py = this.player.y * this.tileSize;
-        const time = Date.now() / 500;
-        const bounce = Math.abs(Math.sin(time)) * 2;
-        const ctx = this.ctx;
-
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
-        ctx.beginPath();
-        ctx.ellipse(px + 16, py + 30, 8, 3, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        const yOffset = -bounce;
-
-        const headGradient = ctx.createRadialGradient(px + 16, py + 10 + yOffset, 2, px + 16, py + 10 + yOffset, 10);
-        headGradient.addColorStop(0, '#FFB6B9');
-        headGradient.addColorStop(1, '#FF6B6B');
-        ctx.fillStyle = headGradient;
-        ctx.beginPath();
-        ctx.arc(px + 16, py + 10 + yOffset, 9, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = '#FFFFFF';
-        ctx.beginPath();
-        ctx.arc(px + 13, py + 9 + yOffset, 2, 0, Math.PI * 2);
-        ctx.arc(px + 19, py + 9 + yOffset, 2, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = '#000000';
-        ctx.beginPath();
-        ctx.arc(px + 13, py + 10 + yOffset, 1, 0, Math.PI * 2);
-        ctx.arc(px + 19, py + 10 + yOffset, 1, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.strokeStyle = '#FF4444';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.arc(px + 16, py + 11 + yOffset, 3, 0, Math.PI);
-        ctx.stroke();
-
-        const bodyGradient = ctx.createLinearGradient(px + 10, py + 18 + yOffset, px + 22, py + 18 + yOffset);
-        bodyGradient.addColorStop(0, '#FFE66D');
-        bodyGradient.addColorStop(1, '#FFCC00');
-        ctx.fillStyle = bodyGradient;
-        ctx.fillRect(px + 10, py + 18 + yOffset, 12, 10);
-
-        const armSwing = Math.sin(time * 2) * 2;
-        ctx.fillStyle = '#FFE66D';
-
-        ctx.save();
-        ctx.translate(px + 8, py + 20 + yOffset);
-        ctx.rotate(armSwing * 0.1);
-        ctx.fillRect(-2, 0, 4, 8);
-        ctx.restore();
-
-        ctx.save();
-        ctx.translate(px + 24, py + 20 + yOffset);
-        ctx.rotate(-armSwing * 0.1);
-        ctx.fillRect(-2, 0, 4, 8);
-        ctx.restore();
-
-        const legGradient = ctx.createLinearGradient(px + 10, py + 26 + yOffset, px + 22, py + 26 + yOffset);
-        legGradient.addColorStop(0, '#4ECDC4');
-        legGradient.addColorStop(1, '#3BA89F');
-        ctx.fillStyle = legGradient;
-        ctx.fillRect(px + 10, py + 26 + yOffset, 5, 6);
-        ctx.fillRect(px + 17, py + 26 + yOffset, 5, 6);
-
-        ctx.fillStyle = '#2C3E50';
-        ctx.fillRect(px + 10, py + 30 + yOffset, 5, 2);
-        ctx.fillRect(px + 17, py + 30 + yOffset, 5, 2);
-    }
-
-    setState(newState) {
-        this.state = newState;
-    }
-
-    handleMovement() {
-        if (this.moveCooldown > 0) return;
-
-        let dx = 0;
-        let dy = 0;
-
-        if (this.keys.arrowup || this.keys.w) {
-            dy = -1;
-            this.player.direction = 'up';
-        } else if (this.keys.arrowdown || this.keys.s) {
-            dy = 1;
-            this.player.direction = 'down';
-        } else if (this.keys.arrowleft || this.keys.a) {
-            dx = -1;
-            this.player.direction = 'left';
-        } else if (this.keys.arrowright || this.keys.d) {
-            dx = 1;
-            this.player.direction = 'right';
-        }
-
-        if (dx === 0 && dy === 0) return;
-
-        const newX = this.player.x + dx;
-        const newY = this.player.y + dy;
-
-        if (!this.canMoveTo(newX, newY)) {
-            this.moveCooldown = this.moveDelay * 0.5;
-            return;
-        }
-
-        this.player.x = newX;
-        this.player.y = newY;
-        this.moveCooldown = this.moveDelay;
-
-        const tile = this.map[newY][newX];
-        this.handleTileStep(tile);
-    }
-
-    canMoveTo(x, y) {
-        if (x < 0 || x >= this.mapWidth || y < 0 || y >= this.mapHeight) {
-            return false;
-        }
-        const tile = this.map[y][x];
-        return tile !== TILE_TYPES.WATER && tile !== TILE_TYPES.TREE && tile !== TILE_TYPES.HOUSE;
-    }
-
-    handleTileStep(tile) {
-        if (!this.player.languageTrack) return;
-
-        this.stepsSinceEncounter = Math.min(999, this.stepsSinceEncounter + 1);
-        const baseRate = ENCOUNTER_RATES[tile];
-        if (!baseRate || this.stepsSinceEncounter < 2) {
-            return;
-        }
-
-        const levelBonus = Math.max(0, (this.player.level - 1) * 0.01);
-        if (Math.random() < baseRate + levelBonus) {
-            this.stepsSinceEncounter = 0;
-            this.startBattle();
-        }
-    }
-
-    startBattle() {
-        const track = this.player.languageTrack;
-        if (!track) return;
-
-        const available = track.lexicon.filter(word => word.level <= this.player.level + 1);
-        const pool = available.length ? available : track.lexicon;
-        const uncaught = pool.filter(word => !this.caughtWordIds.has(word.id));
-        const target = (uncaught.length ? uncaught : pool)[Math.floor(Math.random() * (uncaught.length ? uncaught.length : pool.length))];
-
-        const enemy = {
-            ...target,
-            language: track.name,
-            trackId: track.id,
-        };
-
-        const enemyMaxConfidence = Math.min(4, 2 + Math.ceil(enemy.level));
-        const playerMaxConfidence = Math.min(4, 3 + Math.floor(this.player.level / 3));
-
-        this.currentBattle = {
-            enemy,
-            enemyConfidence: enemyMaxConfidence,
-            enemyMaxConfidence,
-            playerConfidence: playerMaxConfidence,
-            playerMaxConfidence,
-            pendingIntent: null,
-        };
-
-        this.seenWordIds.add(enemy.id);
-        this.setState('battle');
-        this.clearPendingTimeouts();
-
-        this.ui.battleScreen.classList.remove('hidden');
-        this.ui.quizSection.classList.add('hidden');
-        this.ui.wordSelection.classList.add('hidden');
-        this.ui.battleMenu.classList.remove('hidden');
-
-        this.updateBattleUI();
-        this.showBattleMessage(`A wild ${enemy.word} (${track.name}) appeared!`);
-    }
-
-    showBattleMessage(message) {
-        this.ui.battleMessage.textContent = message;
-    }
-
-    updateBattleUI() {
-        if (!this.currentBattle) return;
-
-        const { enemy, enemyConfidence, enemyMaxConfidence, playerConfidence, playerMaxConfidence } = this.currentBattle;
-
-        this.ui.enemySprite.textContent = enemy.emoji;
-        this.ui.enemyName.textContent = enemy.word;
-        this.ui.enemyWord.textContent = `${enemy.translation}`;
-        this.ui.enemyLevel.textContent = `Lv.${enemy.level}`;
-        this.ui.playerBattleLevel.textContent = `Lv.${this.player.level}`;
-
-        this.renderConfidence(this.ui.enemyConfidence, enemyConfidence, enemyMaxConfidence);
-        this.renderConfidence(this.ui.playerConfidence, playerConfidence, playerMaxConfidence);
-
-        this.updateBattleButtons();
-    }
-
-    renderConfidence(element, current, max) {
-        if (!element) return;
-        element.innerHTML = '';
-        for (let i = 0; i < max; i++) {
-            const span = document.createElement('span');
-            span.className = `heart${i >= current ? ' empty' : ''}`;
-            span.textContent = i < current ? '❤️' : '🤍';
-            element.appendChild(span);
-        }
-    }
-
-    updateBattleButtons() {
-        if (!this.currentBattle) return;
-        this.ui.answerBtn.disabled = false;
-        this.ui.studyBtn.disabled = this.collectedLinguomon.length === 0;
-        this.ui.catchBtn.disabled = this.currentBattle.enemyConfidence > 1;
-    }
-
-    prepareQuiz(intent) {
-        if (!this.currentBattle) return;
-
-        const payload = this.generateQuestion(intent);
-        this.currentBattle.pendingIntent = intent;
-        this.currentQuiz = {
-            intent,
-            question: payload.question,
-            answers: payload.answers,
-            correctAnswer: payload.correctAnswer,
-        };
-
-        this.ui.quizSection.classList.remove('hidden');
-        this.ui.battleMenu.classList.add('hidden');
-        this.ui.wordSelection.classList.add('hidden');
-
-        this.ui.quizQuestion.textContent = payload.question;
-        this.ui.quizAnswers.innerHTML = '';
-
-        payload.answers.forEach(answer => {
-            const btn = document.createElement('button');
-            btn.className = 'answer-btn';
-            btn.textContent = answer;
-            btn.addEventListener('click', () => this.handleAnswerSelection(answer, btn));
-            this.ui.quizAnswers.appendChild(btn);
-        });
-    }
-
-    generateQuestion(intent) {
-        const { enemy } = this.currentBattle;
-        const track = this.player.languageTrack;
-        const lexicon = track.lexicon;
-        const templates = [];
-
-        if (lexicon.length >= 4) {
-            templates.push('toEnglish', 'toForeign');
-        } else {
-            templates.push('toEnglish');
-        }
-
-        const typeSet = new Set(lexicon.map(word => word.type));
-        if (typeSet.size >= 4) {
-            templates.push('category');
-        }
-
-        const template = randomChoice(templates);
-
-        if (template === 'toForeign') {
-            const wrongs = pickWrongAnswers(
-                lexicon.map(word => word.word),
-                enemy.word,
-                3,
-            );
-            const answers = shuffle([enemy.word, ...wrongs]);
-            return {
-                question: `How do you say "${enemy.translation}" in ${track.name}?`,
-                answers,
-                correctAnswer: enemy.word,
-            };
-        }
-
-        if (template === 'category') {
-            const wrongs = pickWrongAnswers(
-                lexicon.map(word => word.type),
-                enemy.type,
-                3,
-            );
-            const answers = shuffle([enemy.type, ...wrongs]);
-            return {
-                question: `Which category best fits "${enemy.word}"?`,
-                answers,
-                correctAnswer: enemy.type,
-            };
-        }
-
-        // Default: translate into English
-        const wrongTranslations = pickWrongAnswers(
-            ALL_WORDS.map(word => word.translation),
-            enemy.translation,
+    const template = randomChoice(templates);
+    if (template === "toForeign") {
+        const distractors = pickDistractors(
+            track.lexicon.map(entry => entry.word),
+            word.word,
             3,
         );
-        const answers = shuffle([enemy.translation, ...wrongTranslations]);
+        const answers = shuffle([word.word, ...distractors]);
         return {
-            question: `What does "${enemy.word}" mean?`,
+            prompt: `How do you say "${word.translation}" in ${track.name}?`,
             answers,
-            correctAnswer: enemy.translation,
+            correct: word.word,
         };
     }
-
-    handleAnswerSelection(answer, button) {
-        if (!this.currentQuiz) return;
-
-        const buttons = Array.from(this.ui.quizAnswers.querySelectorAll('.answer-btn'));
-        buttons.forEach(btn => {
-            btn.disabled = true;
-            if (btn.textContent === this.currentQuiz.correctAnswer) {
-                btn.classList.add('correct');
-            } else if (btn === button) {
-                btn.classList.add(answer === this.currentQuiz.correctAnswer ? 'correct' : 'incorrect');
-            }
-        });
-
-        const isCorrect = answer === this.currentQuiz.correctAnswer;
-        this.scheduleTimeout(() => this.resolveQuizResult(isCorrect), 750);
-    }
-
-    resolveQuizResult(correct) {
-        if (!this.currentBattle || !this.currentQuiz) return;
-        const intent = this.currentQuiz.intent;
-        this.currentQuiz = null;
-
-        if (intent === 'attack') {
-            this.handleAttackResult(correct);
-        } else if (intent === 'catch') {
-            this.handleCatchResult(correct);
-        }
-    }
-
-    handleAttackResult(correct) {
-        if (!this.currentBattle) return;
-        const battle = this.currentBattle;
-        const enemy = battle.enemy;
-
-        if (correct) {
-            battle.enemyConfidence = Math.max(0, battle.enemyConfidence - 1);
-            this.updateBattleUI();
-
-            if (battle.enemyConfidence <= 0) {
-                this.showBattleMessage(`${enemy.word} bolts away before you can capture it!`);
-                this.gainExperience(12 + enemy.level * 3);
-                this.scheduleTimeout(() => this.endBattle(false), 1600);
-                return;
-            }
-
-            if (battle.enemyConfidence === 1) {
-                this.showBattleMessage(`Great! ${enemy.word} looks ready to be caught.`);
-            } else {
-                this.showBattleMessage(`Correct! ${enemy.word} wavers.`);
-            }
-
-            this.scheduleTimeout(() => this.showBattleMenu(), 900);
-        } else {
-            battle.playerConfidence = Math.max(0, battle.playerConfidence - 1);
-            this.updateBattleUI();
-
-            if (battle.playerConfidence <= 0) {
-                this.showBattleMessage('You ran out of confidence. The Linguomon dashes away!');
-                this.scheduleTimeout(() => this.endBattle(false), 1500);
-                return;
-            }
-
-            this.showBattleMessage('Not quite. Take a breath and try again.');
-            this.scheduleTimeout(() => this.showBattleMenu(), 900);
-        }
-    }
-
-    handleCatchResult(correct) {
-        if (!this.currentBattle) return;
-        const enemy = this.currentBattle.enemy;
-
-        if (correct) {
-            this.captureEnemy();
-        } else {
-            this.showBattleMessage(`${enemy.word} slips free and escapes!`);
-            this.scheduleTimeout(() => this.endBattle(false), 1500);
-        }
-    }
-
-    captureEnemy() {
-        if (!this.currentBattle) return;
-        const enemy = this.currentBattle.enemy;
-
-        if (!this.caughtWordIds.has(enemy.id)) {
-            this.collectedLinguomon.push({
-                ...enemy,
-                capturedAt: Date.now(),
-            });
-            this.caughtWordIds.add(enemy.id);
-        }
-
-        this.showBattleMessage(`🎉 ${enemy.word} joined your lexicon!`);
-        this.showToast(`${enemy.word} = ${enemy.translation}`);
-        this.gainExperience(20 + enemy.level * 6);
-        this.updateUI();
-        this.scheduleTimeout(() => this.endBattle(true), 2000);
-    }
-
-    showBattleMenu() {
-        if (!this.currentBattle) return;
-        this.ui.quizSection.classList.add('hidden');
-        this.ui.wordSelection.classList.add('hidden');
-        this.ui.battleMenu.classList.remove('hidden');
-        this.updateBattleButtons();
-    }
-
-    endBattle(caught) {
-        this.clearPendingTimeouts();
-        if (!this.currentBattle) return;
-
-        this.currentBattle = null;
-        this.currentQuiz = null;
-
-        this.ui.battleScreen.classList.add('hidden');
-        this.ui.quizSection.classList.add('hidden');
-        this.ui.wordSelection.classList.add('hidden');
-        this.ui.battleMenu.classList.remove('hidden');
-
-        this.setState('world');
-        this.stepsSinceEncounter = 0;
-        this.updateUI();
-
-        if (caught) {
-            this.showToast('Word added to your Linguodex!');
-        }
-    }
-
-    gainExperience(amount) {
-        this.player.experience += amount;
-        const newLevel = Math.floor(this.player.experience / 60) + 1;
-        if (newLevel > this.player.level) {
-            this.player.level = newLevel;
-            this.showToast(`Level up! You are now level ${this.player.level}.`, 2600);
-            if (this.state === 'battle') {
-                this.showBattleMessage(`Your confidence surges! Level ${this.player.level}.`);
-            }
-        }
-        this.updateUI();
-    }
-
-    populateLanguageChoices() {
-        if (!this.ui.languageChoices) return;
-        this.ui.languageChoices.innerHTML = '';
-
-        LANGUAGE_TRACKS.forEach(track => {
-            const btn = document.createElement('button');
-            btn.className = 'language-choice';
-            btn.innerHTML = `
-                <div class="lang-name">${track.emoji} ${track.name}</div>
-                <div class="lang-desc">${track.tagline}</div>
-                <div class="lang-meta">
-                    <span>${track.difficulty}</span>
-                    <span>${track.region}</span>
-                </div>
-            `;
-            btn.addEventListener('click', () => this.beginAdventure(track.id));
-            this.ui.languageChoices.appendChild(btn);
-        });
-
-        this.ui.randomLanguageBtn.addEventListener('click', () => {
-            const randomTrack = randomChoice(LANGUAGE_TRACKS);
-            this.beginAdventure(randomTrack.id);
-        });
-    }
-
-    beginAdventure(trackId) {
-        const track = LANGUAGE_TRACKS.find(t => t.id === trackId);
-        if (!track) return;
-
-        this.player.languageTrack = track;
-        this.player.x = 8;
-        this.player.y = 11;
-        this.stepsSinceEncounter = 3;
-
-        if (this.ui.startScreen) {
-            this.ui.startScreen.classList.add('hidden');
-        }
-
-        this.queueDialogue(
-            [
-                {
-                    portrait: '🧑‍🏫',
-                    text: `Welcome to ${track.region}! This is the ${track.name} track.`,
-                },
-                {
-                    portrait: '🧑‍🏫',
-                    text: 'Walk through tall grass and flowers to encounter new Linguomon.',
-                },
-                {
-                    portrait: '🧑‍🏫',
-                    text: 'Answer questions to lower their confidence, then catch them to study later!',
-                },
-            ],
-            () => {
-                this.setState('world');
-                this.showToast(`Adventure started on the ${track.name} track!`);
-            },
-        );
-
-        this.updateUI();
-    }
-
-    queueDialogue(lines, onComplete) {
-        this.dialogueQueue = Array.isArray(lines) ? [...lines] : [];
-        this.dialogueCallback = onComplete || null;
-        this.setState('dialogue');
-        this.advanceDialogue();
-        if (this.ui.dialogueOverlay) {
-            this.ui.dialogueOverlay.classList.remove('hidden');
-        }
-    }
-
-    advanceDialogue() {
-        if (this.dialogueQueue.length === 0) {
-            if (this.ui.dialogueOverlay) {
-                this.ui.dialogueOverlay.classList.add('hidden');
-            }
-            const callback = this.dialogueCallback;
-            this.dialogueCallback = null;
-            if (callback) callback();
-            return;
-        }
-
-        const entry = this.dialogueQueue.shift();
-        this.ui.dialoguePortrait.textContent = entry.portrait || '🧑‍🏫';
-        this.ui.dialogueText.textContent = entry.text;
-    }
-
-    showStudyMenu() {
-        if (!this.currentBattle) return;
-
-        if (this.collectedLinguomon.length === 0) {
-            this.showToast('Catch some Linguomon to study with first!');
-            return;
-        }
-
-        this.ui.battleMenu.classList.add('hidden');
-        this.ui.quizSection.classList.add('hidden');
-        this.ui.wordSelection.classList.remove('hidden');
-
-        const unique = {};
-        this.collectedLinguomon.forEach(word => {
-            if (!unique[word.id]) {
-                unique[word.id] = word;
-            }
-        });
-
-        this.ui.wordList.innerHTML = '';
-        Object.values(unique).forEach(word => {
-            const btn = document.createElement('button');
-            btn.className = 'word-btn';
-            btn.innerHTML = `
-                <span class="word-native">${word.word}</span>
-                <span class="word-translation">${word.translation}</span>
-            `;
-            btn.addEventListener('click', () => this.useStudyWord(word));
-            this.ui.wordList.appendChild(btn);
-        });
-    }
-
-    useStudyWord(word) {
-        if (!this.currentBattle) return;
-        const battle = this.currentBattle;
-        const enemy = battle.enemy;
-
-        this.ui.wordSelection.classList.add('hidden');
-
-        let message = `You review ${word.word} (${word.translation}).`;
-        let changed = false;
-
-        if (battle.playerConfidence < battle.playerMaxConfidence) {
-            battle.playerConfidence += 1;
-            changed = true;
-            message += ' Your confidence grows.';
-        }
-
-        if (word.type === enemy.type && battle.enemyConfidence > 1) {
-            battle.enemyConfidence -= 1;
-            changed = true;
-            message += ` ${enemy.word} looks impressed!`;
-        }
-
-        if (!changed) {
-            message += ' You feel ready for the next challenge.';
-        }
-
-        this.updateBattleUI();
-        this.showBattleMessage(message);
-        this.scheduleTimeout(() => this.showBattleMenu(), 1400);
-    }
-
-    updateUI() {
-        const totalEntries = LANGUAGE_TRACKS.reduce((sum, track) => sum + track.lexicon.length, 0);
-        const uniqueCaught = this.collectedLinguomon.reduce((set, word) => set.add(word.id), new Set()).size;
-
-        if (this.ui.linguodexCount) {
-            this.ui.linguodexCount.textContent = `Dex: ${uniqueCaught}/${totalEntries}`;
-        }
-        if (this.ui.playerLevel) {
-            this.ui.playerLevel.textContent = `Level: ${this.player.level}`;
-        }
-        if (this.ui.playerLanguage) {
-            this.ui.playerLanguage.textContent = `Track: ${this.player.languageTrack ? this.player.languageTrack.name : '—'}`;
-        }
-    }
-
-    openLinguodex() {
-        if (this.state !== 'world' && this.state !== 'battle') return;
-        const list = this.ui.linguodexList;
-        if (!list) return;
-
-        list.innerHTML = '';
-        const track = this.player.languageTrack;
-
-        if (!track) {
-            list.innerHTML = '<p style="text-align:center;color:#666;">Pick a language track to begin your Linguodex adventure!</p>';
-        } else {
-            track.lexicon.forEach(word => {
-                const status = this.caughtWordIds.has(word.id)
-                    ? 'Caught'
-                    : this.seenWordIds.has(word.id)
-                        ? 'Seen'
-                        : 'Unseen';
-
-                const entry = document.createElement('div');
-                entry.className = 'linguodex-entry';
-                if (status === 'Caught') {
-                    entry.style.borderLeftColor = '#06d6a0';
-                } else if (status === 'Seen') {
-                    entry.style.borderLeftColor = '#fbbf24';
-                } else {
-                    entry.style.borderLeftColor = '#94a3b8';
-                    entry.style.opacity = '0.7';
-                }
-
-                entry.innerHTML = `
-                    <div class="entry-header">
-                        <div>
-                            <span class="sprite">${word.emoji}</span>
-                            <span class="word-info">${word.word}</span>
-                        </div>
-                        <div class="level">Lv.${word.level}</div>
-                    </div>
-                    <div class="translation">${word.translation} (${track.name})</div>
-                    <div class="catch-count">Status: ${status}${status === 'Caught' ? ` | Type: ${word.type}` : ''}</div>
-                `;
-                list.appendChild(entry);
-            });
-        }
-
-        this.ui.linguodexScreen.classList.remove('hidden');
-    }
-
-    closeLinguodex() {
-        this.ui.linguodexScreen.classList.add('hidden');
-    }
-
-    showToast(message, duration = 2000) {
-        if (!this.ui.toast) return;
-        this.ui.toast.textContent = message;
-        this.ui.toast.classList.remove('hidden');
-
-        if (this.activeToastTimer) {
-            clearTimeout(this.activeToastTimer);
-        }
-        this.activeToastTimer = setTimeout(() => {
-            this.ui.toast.classList.add('hidden');
-            this.activeToastTimer = null;
-        }, duration);
-    }
-
-    scheduleTimeout(callback, delay) {
-        const id = setTimeout(() => {
-            this.pendingTimeouts = this.pendingTimeouts.filter(t => t !== id);
-            callback();
-        }, delay);
-        this.pendingTimeouts.push(id);
-    }
-
-    clearPendingTimeouts() {
-        this.pendingTimeouts.forEach(id => clearTimeout(id));
-        this.pendingTimeouts = [];
-    }
-
-    handleRun() {
-        if (!this.currentBattle) return;
-        this.showBattleMessage('You step back to regroup.');
-        this.scheduleTimeout(() => this.endBattle(false), 1000);
-    }
-
-    handleCatchAttempt() {
-        if (!this.currentBattle) return;
-        if (this.currentBattle.enemyConfidence > 1) {
-            this.showBattleMessage('Weaken the Linguomon a bit more before catching it.');
-            this.showToast('Lower its confidence first!');
-            return;
-        }
-        this.prepareQuiz('catch');
-    }
-
-    handleAnswerIntent() {
-        if (!this.currentBattle) return;
-        this.prepareQuiz('attack');
-    }
-
-    initEventListeners() {
-        document.addEventListener('keydown', e => {
-            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
-                e.preventDefault();
-            }
-
-            const key = e.key.toLowerCase();
-
-            if (this.state === 'dialogue' && (key === ' ' || key === 'enter')) {
-                this.advanceDialogue();
-                return;
-            }
-
-            if (key === 'l') {
-                if (this.state === 'world') {
-                    this.openLinguodex();
-                }
-                return;
-            }
-
-            if (key === ' ' && this.state === 'world') {
-                return;
-            }
-
-            if (key === ' ' && this.state === 'battle' && this.currentBattle) {
-                if (this.ui.quizSection.classList.contains('hidden') && this.ui.wordSelection.classList.contains('hidden')) {
-                    this.handleAnswerIntent();
-                }
-                return;
-            }
-
-            if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd'].includes(key)) {
-                this.keys[key] = true;
-            }
-        });
-
-        document.addEventListener('keyup', e => {
-            const key = e.key.toLowerCase();
-            if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd'].includes(key)) {
-                this.keys[key] = false;
-            }
-        });
-
-        this.ui.dialogueNextBtn.addEventListener('click', () => this.advanceDialogue());
-        this.ui.answerBtn.addEventListener('click', () => this.handleAnswerIntent());
-        this.ui.catchBtn.addEventListener('click', () => this.handleCatchAttempt());
-        this.ui.studyBtn.addEventListener('click', () => this.showStudyMenu());
-        this.ui.runBtn.addEventListener('click', () => this.handleRun());
-        this.ui.backBtn.addEventListener('click', () => this.showBattleMenu());
-        this.ui.closeLinguodex.addEventListener('click', () => this.closeLinguodex());
-        if (this.ui.btnLinguodex) {
-            this.ui.btnLinguodex.addEventListener('click', e => {
-                e.preventDefault();
-                if (this.state === 'world') {
-                    this.openLinguodex();
-                }
-            });
-        }
-    }
-
-    initMobileControls() {
-        const prevent = e => e.preventDefault();
-        const bindDirectional = (id, key) => {
-            const button = document.getElementById(id);
-            if (!button) return;
-            ['touchstart', 'mousedown'].forEach(evt => {
-                button.addEventListener(evt, e => {
-                    prevent(e);
-                    this.keys[key] = true;
-                });
-            });
-            ['touchend', 'mouseup', 'touchcancel', 'mouseleave'].forEach(evt => {
-                button.addEventListener(evt, e => {
-                    prevent(e);
-                    this.keys[key] = false;
-                });
-            });
+    if (template === "category") {
+        const distractors = pickDistractors(parts, word.part, 3);
+        const answers = shuffle([word.part, ...distractors]);
+        return {
+            prompt: `Which category fits "${word.word}" best?`,
+            answers,
+            correct: word.part,
         };
+    }
+    const fallbackTranslations = LANGUAGE_TRACKS.flatMap(entry =>
+        entry.lexicon.map(item => item.translation),
+    );
+    const distractors = pickDistractors(fallbackTranslations, word.translation, 3);
+    const answers = shuffle([word.translation, ...distractors]);
+    return {
+        prompt: `What does "${word.word}" mean?`,
+        answers,
+        correct: word.translation,
+    };
+}
 
-        bindDirectional('btnUp', 'arrowup');
-        bindDirectional('btnDown', 'arrowdown');
-        bindDirectional('btnLeft', 'arrowleft');
-        bindDirectional('btnRight', 'arrowright');
+function createCanvasTexture(widthPx, heightPx, draw) {
+    const canvas = document.createElement("canvas");
+    canvas.width = widthPx;
+    canvas.height = heightPx;
+    const ctx = canvas.getContext("2d");
+    ctx.imageSmoothingEnabled = false;
+    draw(ctx);
+    return canvas.toDataURL();
+}
 
-        const btnCenter = document.getElementById('btnCenter');
-        if (btnCenter) {
-            ['touchstart', 'mousedown'].forEach(evt => {
-                btnCenter.addEventListener(evt, e => {
-                    prevent(e);
-                    if (this.state === 'dialogue') {
-                        this.advanceDialogue();
-                    } else if (this.state === 'battle') {
-                        this.handleAnswerIntent();
-                    }
-                });
-            });
+function drawGrassTile(ctx) {
+    ctx.fillStyle = PALETTE.dark;
+    ctx.fillRect(0, 0, TILE_SIZE, TILE_SIZE);
+    ctx.fillStyle = PALETTE.mid;
+    for (let i = 0; i < 12; i++) {
+        const x = (i * 3 + 5) % TILE_SIZE;
+        const y = ((i * 5) % TILE_SIZE);
+        ctx.fillRect(x, y, 2, 5);
+    }
+    ctx.fillStyle = PALETTE.light;
+    for (let i = 0; i < 6; i++) {
+        const x = (i * 5 + 1) % TILE_SIZE;
+        const y = ((i * 7 + 3) % TILE_SIZE);
+        ctx.fillRect(x, y, 1, 3);
+    }
+    ctx.fillStyle = "rgba(255,255,255,0.08)";
+    ctx.fillRect(0, TILE_SIZE - 2, TILE_SIZE, 2);
+}
+
+function drawFlowerTile(ctx) {
+    drawGrassTile(ctx);
+    ctx.fillStyle = PALETTE.bloom;
+    for (let i = 0; i < 4; i++) {
+        ctx.fillRect(3 + i * 3, 3 + ((i * 2) % 4), 2, 2);
+    }
+    ctx.fillStyle = PALETTE.highlight;
+    ctx.fillRect(6, 6, 1, 1);
+}
+
+function drawPathTile(ctx) {
+    ctx.fillStyle = PALETTE.earth;
+    ctx.fillRect(0, 0, TILE_SIZE, TILE_SIZE);
+    ctx.fillStyle = "#8d6a4a";
+    ctx.fillRect(0, TILE_SIZE / 2 - 2, TILE_SIZE, 4);
+    ctx.fillStyle = "#c19b70";
+    for (let i = 0; i < 3; i++) {
+        ctx.fillRect(2 + i * 5, 3 + i, 3, 1);
+        ctx.fillRect(4 + i * 4, 11 - i, 2, 1);
+    }
+}
+
+function drawWaterTile(ctx) {
+    ctx.fillStyle = PALETTE.water;
+    ctx.fillRect(0, 0, TILE_SIZE, TILE_SIZE);
+    ctx.fillStyle = "#3d6fb3";
+    ctx.fillRect(0, 2, TILE_SIZE, 2);
+    ctx.fillRect(0, 10, TILE_SIZE, 2);
+    ctx.fillStyle = "#78a9f3";
+    for (let i = 0; i < 4; i++) {
+        ctx.fillRect(3 + i * 3, 5 + (i % 2), 2, 2);
+    }
+}
+
+function drawTreeTile(ctx) {
+    ctx.fillStyle = PALETTE.dark;
+    ctx.fillRect(5, 12, 6, 4);
+    ctx.fillStyle = PALETTE.mid;
+    ctx.beginPath();
+    ctx.arc(8, 6, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = PALETTE.light;
+    ctx.beginPath();
+    ctx.arc(6, 5, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(10, 4, 3, 0, Math.PI * 2);
+    ctx.fill();
+}
+
+function drawHouseTile(ctx) {
+    ctx.fillStyle = "#c19b70";
+    ctx.fillRect(1, 6, 14, 9);
+    ctx.fillStyle = "#8d6a4a";
+    ctx.beginPath();
+    ctx.moveTo(0, 7);
+    ctx.lineTo(8, 0);
+    ctx.lineTo(16, 7);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#f4f7d2";
+    ctx.fillRect(5, 8, 6, 4);
+    ctx.fillStyle = "#4f3721";
+    ctx.fillRect(7, 11, 2, 4);
+}
+
+function drawSign(ctx) {
+    ctx.fillStyle = "#6f5a3c";
+    ctx.fillRect(6, 4, 4, 8);
+    ctx.fillStyle = "#d8c4a6";
+    ctx.fillRect(2, 0, 12, 6);
+    ctx.fillStyle = "#4c3b28";
+    ctx.fillRect(3, 2, 10, 2);
+}
+
+function drawSparkSheet(ctx) {
+    const frames = 4;
+    for (let i = 0; i < frames; i++) {
+        const offsetX = i * 8;
+        ctx.clearRect(offsetX, 0, 8, 8);
+        ctx.fillStyle = "rgba(0,0,0,0)";
+        ctx.fillRect(offsetX, 0, 8, 8);
+        ctx.fillStyle = i % 2 === 0 ? PALETTE.highlight : PALETTE.accent;
+        ctx.fillRect(offsetX + 3, 1, 2, 6);
+        ctx.fillRect(offsetX + 1, 3, 6, 2);
+        ctx.fillStyle = "rgba(255,255,255,0.35)";
+        ctx.fillRect(offsetX + 3, 3, 2, 2);
+    }
+}
+
+function drawTrainerSheet(ctx) {
+    const directions = ["down", "left", "right", "up"];
+    for (let row = 0; row < directions.length; row++) {
+        for (let col = 0; col < 2; col++) {
+            const ox = col * TILE_SIZE;
+            const oy = row * TILE_SIZE;
+            ctx.clearRect(ox, oy, TILE_SIZE, TILE_SIZE);
+
+            ctx.fillStyle = "rgba(0,0,0,0.25)";
+            ctx.fillRect(ox + 4, oy + 13, 8, 2);
+
+            ctx.fillStyle = "#f4d7a4";
+            ctx.fillRect(ox + 5, oy + 2, 6, 5);
+            ctx.fillRect(ox + 4, oy + 4, 8, 4);
+
+            ctx.fillStyle = "#2f3a28";
+            ctx.fillRect(ox + 5, oy + 1, 6, 2);
+            ctx.fillRect(ox + 4, oy + 3, 8, 1);
+
+            ctx.fillStyle = PALETTE.darkest;
+            if (directions[row] === "down" || directions[row] === "right") {
+                ctx.fillRect(ox + 6, oy + 5, 1, 1);
+                ctx.fillRect(ox + 9, oy + 5, 1, 1);
+            } else if (directions[row] === "left") {
+                ctx.fillRect(ox + 4, oy + 5, 1, 1);
+                ctx.fillRect(ox + 7, oy + 5, 1, 1);
+            }
+
+            ctx.fillStyle = PALETTE.light;
+            ctx.fillRect(ox + 5, oy + 7, 6, 4);
+
+            ctx.fillStyle = PALETTE.mid;
+            ctx.fillRect(ox + 4, oy + 7, 2, 4);
+            ctx.fillRect(ox + 10, oy + 7, 2, 4);
+
+            ctx.fillStyle = "#1f3d2c";
+            const legOffset = col === 0 ? -1 : 1;
+            ctx.fillRect(ox + 5 + legOffset, oy + 11, 3, 4);
+            ctx.fillRect(ox + 8 - legOffset, oy + 11, 3, 4);
+
+            ctx.fillStyle = "#0f1a10";
+            ctx.fillRect(ox + 5 + legOffset, oy + 14, 3, 1);
+            ctx.fillRect(ox + 8 - legOffset, oy + 14, 3, 1);
         }
     }
 }
 
-window.addEventListener('load', () => {
-    new Game();
+function drawMentorSprite(ctx) {
+    ctx.fillStyle = "rgba(0,0,0,0.25)";
+    ctx.fillRect(4, 13, 8, 2);
+    ctx.fillStyle = "#fbe7c6";
+    ctx.fillRect(5, 2, 6, 5);
+    ctx.fillRect(4, 4, 8, 4);
+    ctx.fillStyle = "#2d2a4a";
+    ctx.fillRect(5, 1, 6, 2);
+    ctx.fillRect(5, 4, 6, 1);
+    ctx.fillStyle = "#1b2742";
+    ctx.fillRect(5, 7, 6, 6);
+    ctx.fillStyle = "#243450";
+    ctx.fillRect(4, 8, 2, 4);
+    ctx.fillRect(10, 8, 2, 4);
+    ctx.fillStyle = "#101629";
+    ctx.fillRect(5, 12, 2, 3);
+    ctx.fillRect(9, 12, 2, 3);
+}
+
+function drawPointerSprite(ctx) {
+    ctx.fillStyle = PALETTE.highlight;
+    ctx.beginPath();
+    ctx.moveTo(0, 4);
+    ctx.lineTo(6, 0);
+    ctx.lineTo(6, 8);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = PALETTE.mid;
+    ctx.fillRect(2, 3, 2, 2);
+}
+
+async function initAssets() {
+    const textures = [
+        ["grass", createCanvasTexture(TILE_SIZE, TILE_SIZE, drawGrassTile)],
+        ["flowers", createCanvasTexture(TILE_SIZE, TILE_SIZE, drawFlowerTile)],
+        ["path", createCanvasTexture(TILE_SIZE, TILE_SIZE, drawPathTile)],
+        ["water", createCanvasTexture(TILE_SIZE, TILE_SIZE, drawWaterTile)],
+        ["tree", createCanvasTexture(TILE_SIZE, TILE_SIZE, drawTreeTile)],
+        ["house", createCanvasTexture(TILE_SIZE, TILE_SIZE, drawHouseTile)],
+        ["sign", createCanvasTexture(TILE_SIZE, TILE_SIZE, drawSign)],
+        [
+            "spark",
+            createCanvasTexture(8 * 4, 8, drawSparkSheet),
+            { sliceX: 4, anims: { shimmer: { from: 0, to: 3, speed: 12, loop: true } } },
+        ],
+        [
+            "trainer",
+            createCanvasTexture(TILE_SIZE * 2, TILE_SIZE * 4, drawTrainerSheet),
+            {
+                sliceX: 2,
+                sliceY: 4,
+                anims: {
+                    "idle-down": { from: 0, to: 0 },
+                    "walk-down": { from: 0, to: 1, speed: 6, loop: true },
+                    "idle-left": { from: 2, to: 2 },
+                    "walk-left": { from: 2, to: 3, speed: 6, loop: true },
+                    "idle-right": { from: 4, to: 4 },
+                    "walk-right": { from: 4, to: 5, speed: 6, loop: true },
+                    "idle-up": { from: 6, to: 6 },
+                    "walk-up": { from: 6, to: 7, speed: 6, loop: true },
+                },
+            },
+        ],
+        ["mentor", createCanvasTexture(TILE_SIZE, TILE_SIZE, drawMentorSprite)],
+        ["pointer", createCanvasTexture(6, 8, drawPointerSprite)],
+    ];
+
+    await Promise.all(
+        textures.map(([name, dataUrl, config]) =>
+            config ? kb.loadSprite(name, dataUrl, config) : kb.loadSprite(name, dataUrl),
+        ),
+    );
+}
+
+const directionVectors = {
+    up: vec2(0, -1),
+    down: vec2(0, 1),
+    left: vec2(-1, 0),
+    right: vec2(1, 0),
+};
+
+scene("menu", () => {
+    camScale(1);
+    camPos(width() / 2, height() / 2);
+
+    add([
+        rect(width(), height()),
+        pos(width() / 2, height() / 2),
+        anchor("center"),
+        color(18, 46, 32),
+    ]);
+
+    add([
+        text("Lingua Legends GB", { size: 16, align: "center" }),
+        pos(width() / 2, 20),
+        anchor("top"),
+        color(rgb(216, 249, 123)),
+    ]);
+
+    add([
+        text("Select a language track to begin.", { size: 10, align: "center" }),
+        pos(width() / 2, 44),
+        anchor("top"),
+        color(rgb(148, 184, 148)),
+    ]);
+
+    const optionStartY = 70;
+    const optionSpacing = 24;
+    const optionNodes = LANGUAGE_TRACKS.map((track, index) =>
+        add([
+            text(`${track.name} — ${track.region}`, { size: 10 }),
+            pos(width() / 2 + 8, optionStartY + index * optionSpacing),
+            anchor("left"),
+            color(rgb(188, 214, 170)),
+        ]),
+    );
+
+    const pointer = add([
+        sprite("pointer"),
+        pos(width() / 2 - 12, optionStartY),
+        anchor("center"),
+        color(rgb(216, 249, 123)),
+    ]);
+
+    let selection = 0;
+
+    function refreshSelection() {
+        optionNodes.forEach((node, idx) => {
+            node.color = idx === selection ? rgb(216, 249, 123) : rgb(148, 184, 148);
+        });
+        pointer.pos = vec2(width() / 2 - 16, optionStartY + selection * optionSpacing + 4);
+    }
+
+    refreshSelection();
+
+    function changeSelection(delta) {
+        const max = LANGUAGE_TRACKS.length;
+        selection = (selection + delta + max) % max;
+        refreshSelection();
+    }
+
+    function confirmSelection() {
+        const chosen = LANGUAGE_TRACKS[selection];
+        resetForTrack(chosen);
+        updateHud();
+        go("overworld", { intro: true });
+    }
+
+    onKeyPress("down", () => changeSelection(1));
+    onKeyPress("up", () => changeSelection(-1));
+    onKeyPress("enter", confirmSelection);
+    onKeyPress("space", confirmSelection);
+});
+
+scene("battle", ({ word }) => {
+    const track = getActiveTrack();
+    if (!track) {
+        go("menu");
+        return;
+    }
+
+    camScale(1);
+    camPos(width() / 2, height() / 2);
+
+    add([
+        rect(width(), height()),
+        pos(width() / 2, height() / 2),
+        anchor("center"),
+        color(22, 50, 32),
+    ]);
+
+    const banner = add([
+        rect(width() - 12, height() - 12),
+        pos(width() / 2, height() / 2),
+        anchor("center"),
+        color(18, 40, 24),
+        outline(2, rgb(80, 110, 72)),
+    ]);
+
+    const encounterWord = word || pickWordForEncounter(track);
+    state.discovered.add(encounterWord.id);
+
+    const question = generateQuestion(encounterWord, track);
+
+    add([
+        text(encounterWord.word, { size: 18, align: "center" }),
+        pos(width() / 2, 20),
+        anchor("top"),
+        color(rgb(216, 249, 123)),
+    ]);
+
+    add([
+        text(encounterWord.clue, { size: 10, width: width() - 24, align: "center" }),
+        pos(width() / 2, 48),
+        anchor("top"),
+        color(rgb(148, 184, 148)),
+    ]);
+
+    add([
+        text(question.prompt, { size: 12, width: width() - 24, align: "center" }),
+        pos(width() / 2, 68),
+        anchor("top"),
+        color(rgb(240, 252, 226)),
+    ]);
+
+    const optionStartY = 94;
+    const optionSpacing = 18;
+    const optionNodes = question.answers.map((answer, index) =>
+        add([
+            text("", { size: 12 }),
+            pos(width() / 2, optionStartY + index * optionSpacing),
+            anchor("center"),
+            color(rgb(180, 206, 168)),
+        ]),
+    );
+
+    const instruction = add([
+        text("Enter/Space to answer • Esc to retreat", { size: 8, align: "center" }),
+        pos(width() / 2, height() - 18),
+        anchor("center"),
+        color(rgb(120, 150, 118)),
+    ]);
+
+    const resultLabel = add([
+        text("", { size: 11, width: width() - 20, align: "center" }),
+        pos(width() / 2, height() - 44),
+        anchor("center"),
+        color(rgb(216, 249, 123)),
+    ]);
+
+    const spark = add([
+        sprite("spark", { anim: "shimmer" }),
+        pos(width() / 2, 58),
+        anchor("center"),
+        z(-1),
+    ]);
+    spark.scale = 1.8;
+
+    let selection = 0;
+    let locked = false;
+
+    function refreshOptions() {
+        optionNodes.forEach((node, idx) => {
+            node.text = `${idx === selection ? "▶" : " "} ${question.answers[idx]}`;
+            node.color = idx === selection ? rgb(216, 249, 123) : rgb(160, 190, 150);
+        });
+    }
+
+    refreshOptions();
+
+    function resolveAnswer(correct) {
+        locked = true;
+        if (correct) {
+            state.captured.add(encounterWord.id);
+            gainExperience(35);
+            resultLabel.text = `Captured! "${encounterWord.word}" = "${encounterWord.translation}".`;
+            logMessage(`Captured ${encounterWord.word} = ${encounterWord.translation}.`);
+        } else {
+            resultLabel.text = `Missed! "${encounterWord.word}" means "${encounterWord.translation}".`;
+            logMessage(`Missed ${encounterWord.word}. Try again soon.`);
+        }
+        updateHud();
+        wait(1.4, () => go("overworld", { resume: true }));
+    }
+
+    onKeyPress("down", () => {
+        if (locked) return;
+        selection = (selection + 1) % question.answers.length;
+        refreshOptions();
+    });
+
+    onKeyPress("up", () => {
+        if (locked) return;
+        selection = (selection - 1 + question.answers.length) % question.answers.length;
+        refreshOptions();
+    });
+
+    function submit() {
+        if (locked) return;
+        const answer = question.answers[selection];
+        const isCorrect = answer === question.correct;
+        resolveAnswer(isCorrect);
+    }
+
+    onKeyPress("enter", submit);
+    onKeyPress("space", submit);
+
+    onKeyPress("escape", () => {
+        if (locked) return;
+        locked = true;
+        logMessage("You retreated to rethink your strategy.");
+        wait(0.6, () => go("overworld", { resume: true }));
+    });
+});
+
+scene("overworld", ({ intro = false } = {}) => {
+    const track = getActiveTrack();
+    if (!track) {
+        go("menu");
+        return;
+    }
+
+    camScale(2.4);
+
+    const sanitized = MAP_LAYOUT.map(row => row.replace(/S/g, "P"));
+    const level = addLevel(
+        sanitized,
+        {
+            T: () => [
+                sprite("tree"),
+                anchor("topleft"),
+                area({ width: 14, height: 14, offset: vec2(1, 2) }),
+                solid(),
+                z(5),
+            ],
+            G: () => [sprite("grass"), anchor("topleft"), z(-5)],
+            F: () => [sprite("flowers"), anchor("topleft"), z(-5)],
+            P: () => [sprite("path"), anchor("topleft"), z(-6)],
+            W: () => [sprite("water"), anchor("topleft"), area(), solid(), z(4)],
+            C: () => [sprite("house"), anchor("topleft"), area({ width: 16, height: 14, offset: vec2(0, 2) }), solid(), z(4)],
+        },
+        {
+            tileWidth: TILE_SIZE,
+            tileHeight: TILE_SIZE,
+        },
+    );
+
+    const signs = [];
+    SIGN_TEXT.forEach((lines, key) => {
+        const [xStr, yStr] = key.split(",");
+        const tile = vec2(Number(xStr), Number(yStr));
+        const entity = add([
+            sprite("sign"),
+            anchor("center"),
+            pos(tileToWorld(tile)),
+            area({ width: 12, height: 12, offset: vec2(-6, -6) }),
+            z(6),
+            { tile, lines },
+        ]);
+        signs.push(entity);
+    });
+
+    const npcEntities = NPCS.map(descriptor => {
+        const entity = add([
+            sprite("mentor"),
+            anchor("center"),
+            pos(tileToWorld(descriptor.tile)),
+            area({ width: 12, height: 14, offset: vec2(-6, -7) }),
+            z(7),
+            { data: descriptor },
+        ]);
+        return entity;
+    });
+
+    const player = add([
+        sprite("trainer", { anim: `idle-${state.facing}` }),
+        anchor("center"),
+        pos(tileToWorld(state.playerTile)),
+        area({ width: 12, height: 12, offset: vec2(-6, -8) }),
+        z(10),
+        {
+            tile: state.playerTile.clone(),
+            targetTile: state.playerTile.clone(),
+            targetPos: tileToWorld(state.playerTile),
+            moving: false,
+            facing: state.facing,
+        },
+    ]);
+
+    camPos(player.pos);
+
+    let dialogue = null;
+
+    function startDialogue(lines, onComplete = () => {}) {
+        const queue = Array.isArray(lines) ? [...lines] : [String(lines)];
+        if (!queue.length) return;
+
+        const panel = add([
+            rect(width() - 12, 52),
+            pos(width() / 2, height() - 34),
+            anchor("center"),
+            color(18, 40, 24),
+            outline(2, rgb(70, 100, 68)),
+            fixed(),
+            z(100),
+        ]);
+
+        const label = add([
+            text("", { size: 11, width: width() - 28 }),
+            pos(width() / 2, height() - 36),
+            anchor("center"),
+            color(rgb(216, 249, 123)),
+            fixed(),
+            z(101),
+        ]);
+
+        const dialogueState = {
+            panel,
+            label,
+            queue,
+            onComplete,
+            advance() {
+                if (!this.queue.length) {
+                    this.panel.destroy();
+                    this.label.destroy();
+                    dialogue = null;
+                    this.onComplete();
+                    return;
+                }
+                this.label.text = this.queue.shift();
+            },
+        };
+
+        dialogue = dialogueState;
+        dialogue.advance();
+    }
+
+    function openLexilog() {
+        if (dialogue) return;
+        const track = getActiveTrack();
+        if (!track) return;
+        const capturedWords = track.lexicon.filter(entry => state.captured.has(entry.id));
+        if (!capturedWords.length) {
+            startDialogue([
+                "LexiLog is empty for this track.",
+                "Capture words by answering correctly in encounters.",
+            ]);
+            return;
+        }
+        const lines = ["LexiLog Entries:"];
+        capturedWords.slice(0, 5).forEach(entry => {
+            lines.push(`${entry.word.toUpperCase()} = ${entry.translation}`);
+        });
+        if (capturedWords.length > 5) {
+            lines.push(`...and ${capturedWords.length - 5} more waiting for review.`);
+        } else {
+            lines.push("Keep exploring to expand your LexiLog!");
+        }
+        startDialogue(lines);
+    }
+
+    function setFacing(direction) {
+        player.facing = direction;
+        state.facing = direction;
+        if (!player.moving) {
+            player.play(`idle-${direction}`);
+        } else {
+            player.play(`walk-${direction}`);
+        }
+    }
+
+    function handleTileArrival(tile) {
+        state.playerTile = tile.clone();
+        const char = tileChar(tile);
+        if (state.encounterCooldown > 0) {
+            state.encounterCooldown -= 1;
+        }
+        if ((char === "G" || char === "F") && state.encounterCooldown <= 0) {
+            const baseRate = char === "F" ? 0.28 : 0.16;
+            const levelBonus = (state.level - 1) * 0.015;
+            if (Math.random() < baseRate + levelBonus) {
+                state.encounterCooldown = 3;
+                const encounterWord = pickWordForEncounter(track);
+                const spark = add([
+                    sprite("spark", { anim: "shimmer" }),
+                    pos(player.pos.x, player.pos.y + 6),
+                    anchor("center"),
+                    z(30),
+                ]);
+                spark.scale = 1.5;
+                wait(0.4, () => spark.destroy());
+                wait(0.2, () => go("battle", { word: encounterWord }));
+            }
+        }
+    }
+
+    function attemptMove(direction) {
+        if (dialogue || player.moving) return;
+        setFacing(direction);
+        const offset = directionVectors[direction];
+        const targetTile = player.tile.add(offset);
+        if (!tileInBounds(targetTile) || !isPassable(targetTile)) {
+            player.play(`idle-${direction}`);
+            return;
+        }
+        player.moving = true;
+        player.targetTile = targetTile;
+        player.targetPos = tileToWorld(targetTile);
+        player.play(`walk-${direction}`);
+    }
+
+    player.onUpdate(() => {
+        if (player.moving) {
+            const diff = player.targetPos.sub(player.pos);
+            const distance = diff.len();
+            const step = MOVE_SPEED * dt();
+            if (distance <= step) {
+                player.pos = player.targetPos;
+                player.tile = player.targetTile;
+                player.moving = false;
+                player.play(`idle-${player.facing}`);
+                handleTileArrival(player.tile);
+            } else {
+                player.move(diff.unit().scale(step));
+            }
+        } else if (!dialogue) {
+            if (isKeyDown("up")) attemptMove("up");
+            else if (isKeyDown("down")) attemptMove("down");
+            else if (isKeyDown("left")) attemptMove("left");
+            else if (isKeyDown("right")) attemptMove("right");
+        }
+        camPos(player.pos);
+    });
+
+    function interact() {
+        if (dialogue) {
+            dialogue.advance();
+            return;
+        }
+        const direction = player.facing;
+        const offset = directionVectors[direction];
+        const frontTile = player.tile.add(offset);
+
+        const sign = signs.find(entry => entry.tile.x === frontTile.x && entry.tile.y === frontTile.y);
+        if (sign) {
+            startDialogue(sign.lines);
+            return;
+        }
+
+        const npc = npcEntities.find(
+            entry => entry.data.tile.x === frontTile.x && entry.data.tile.y === frontTile.y,
+        );
+        if (npc) {
+            const lines = npc.data.lines;
+            startDialogue(lines);
+            return;
+        }
+
+        const char = tileChar(frontTile);
+        if (char === "C") {
+            startDialogue([
+                "Language Lab: rest here in future builds to heal and review.",
+                "For now, keep exploring the grove outside!",
+            ]);
+        }
+    }
+
+    onKeyPress("space", interact);
+    onKeyPress("enter", interact);
+    onKeyPress("l", openLexilog);
+
+    if (intro) {
+        startDialogue(track.intro);
+    }
+});
+
+async function bootstrap() {
+    await initAssets();
+    updateHud();
+    go("menu");
+}
+
+bootstrap().catch(error => {
+    console.error("Failed to start Lingua Legends GB:", error);
 });

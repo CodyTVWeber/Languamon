@@ -3,122 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Linguomon - Word League Adventure</title>
+    <title>Lingua Legends GB</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="game-container">
-        <div class="game-header">
-            <h1>🎮 LINGUOMON: WORD LEAGUE</h1>
-            <div class="stats">
-                <span id="linguodex-count">Dex: 0/0</span>
-                <span id="player-level">Level: 1</span>
-                <span id="player-language">Track: —</span>
+    <main class="shell">
+        <section class="hud">
+            <h1 class="hud-title">Lingua Legends GB</h1>
+            <div class="hud-panel">
+                <span id="hud-track">Track: —</span>
+                <span id="hud-progress">Lexicon: 0 / 0</span>
+                <span id="hud-level">Rank: 1</span>
             </div>
-        </div>
-        
-        <div class="game-screen">
-            <canvas id="gameCanvas" width="544" height="480"></canvas>
-            
-            <div id="battleScreen" class="battle-screen hidden">
-                <div class="battle-container">
-                    <div class="battle-top">
-                        <div class="linguomon-display enemy">
-                            <div class="portrait">
-                                <div id="enemySprite" class="sprite"></div>
-                            </div>
-                            <div class="info">
-                                <div class="name-level">
-                                    <span id="enemyName" class="name"></span>
-                                    <span id="enemyLevel" class="level"></span>
-                                </div>
-                                <div id="enemyWord" class="word-tag"></div>
-                                <div class="hp-track" id="enemyConfidence"></div>
-                            </div>
-                        </div>
-                        <div class="linguomon-display player">
-                            <div class="portrait">
-                                <div id="playerSprite" class="sprite">🧑‍🎓</div>
-                            </div>
-                            <div class="info">
-                                <div class="name-level">
-                                    <span class="name">You</span>
-                                    <span id="playerBattleLevel" class="level"></span>
-                                </div>
-                                <div class="hp-track" id="playerConfidence"></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="battle-ui">
-                        <div id="battleMessage" class="battle-message"></div>
-                        <div id="quizSection" class="quiz-section hidden">
-                            <div class="question" id="quizQuestion"></div>
-                            <div class="answers" id="quizAnswers"></div>
-                        </div>
-                        <div id="battleMenu" class="battle-menu">
-                            <button class="battle-btn" id="answerBtn">ANSWER</button>
-                            <button class="battle-btn" id="catchBtn">CATCH</button>
-                            <button class="battle-btn" id="studyBtn">STUDY</button>
-                            <button class="battle-btn" id="runBtn">RUN</button>
-                        </div>
-                        <div id="wordSelection" class="word-selection hidden">
-                            <div class="word-list" id="wordList"></div>
-                            <button class="back-btn" id="backBtn">BACK</button>
-                        </div>
-                    </div>
+            <div class="hud-feed" id="hud-feed"></div>
+            <p class="hud-hint">Arrow keys / WASD move • Space interacts • Enter confirms • L opens LexiLog</p>
+        </section>
+        <section class="cabinet">
+            <div class="cabinet-top">
+                <div class="speaker">
+                    <span></span><span></span><span></span><span></span><span></span>
                 </div>
+                <div class="power-led"></div>
             </div>
-        </div>
-        
-        <div class="controls-info">
-            <p>🎮 Move with Arrow Keys or WASD • Press Space to interact • Press L to open the Linguodex</p>
-            <p>🌿 Walk through tall grass to encounter Linguomon and grow your vocabulary!</p>
-        </div>
-        
-        <div class="mobile-controls">
-            <div class="dpad-container">
-                <div class="dpad">
-                    <button class="dpad-btn up" id="btnUp">▲</button>
-                    <button class="dpad-btn down" id="btnDown">▼</button>
-                    <button class="dpad-btn left" id="btnLeft">◀</button>
-                    <button class="dpad-btn right" id="btnRight">▶</button>
-                    <button class="dpad-btn center" id="btnCenter">OK</button>
-                </div>
+            <div class="screen">
+                <div id="game-root" class="game-root"></div>
+                <div class="scanlines"></div>
             </div>
-            <div class="action-buttons">
-                <button class="action-btn" id="btnLinguodex">📚<br>DEX</button>
-            </div>
-        </div>
-        
-        <div id="linguodexScreen" class="linguodex-screen hidden">
-            <div class="linguodex-container">
-                <h2>📚 LINGUODEX</h2>
-                <div id="linguodexList" class="linguodex-list"></div>
-                <button class="close-btn" id="closeLinguodex">CLOSE</button>
-            </div>
-        </div>
-    </div>
-    
-    <div id="startScreen" class="overlay start-screen">
-        <div class="start-card">
-            <h2>Welcome to Linguomon!</h2>
-            <p class="start-subtitle">Choose a language track to begin your adventure.</p>
-            <div id="languageChoices" class="language-choice-grid"></div>
-            <button class="secondary-btn" id="randomLanguageBtn">Surprise Me</button>
-            <p class="start-hint">You can review everything you catch in the Linguodex.</p>
-        </div>
-    </div>
-    
-    <div id="dialogueOverlay" class="overlay hidden">
-        <div class="dialogue-card">
-            <div class="dialogue-portrait" id="dialoguePortrait">🧑‍🏫</div>
-            <div class="dialogue-text" id="dialogueText"></div>
-            <button class="primary-btn" id="dialogueNextBtn">Continue</button>
-        </div>
-    </div>
-    
-    <div id="toast" class="toast hidden"></div>
-    
-    <script src="game.js"></script>
+            <div class="cabinet-label">LINGUA BOY ADVANCE</div>
+        </section>
+    </main>
+    <script type="module" src="game.js"></script>
 </body>
 </html>
