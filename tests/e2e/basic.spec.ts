@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { enterOverworld } from "./helpers";
 
 const HUD_TRACK = "#hud-track";
 const HUD_PROGRESS = "#hud-progress";
@@ -17,15 +18,7 @@ test.describe("Lingua Legends sanity checks", () => {
     test("selects a track and updates HUD after entering overworld", async ({ page }) => {
         await page.goto("/");
 
-        await page.keyboard.press("ArrowDown");
-        await page.keyboard.press("Enter");
-
-        const dialogue = page.locator("text=/Welcome to/");
-        await expect(dialogue).toBeVisible({ timeout: 7000 });
-
-        for (let i = 0; i < 5; i += 1) {
-            await page.keyboard.press("Space");
-        }
+        await enterOverworld(page, { select: 1 });
 
         await expect(page.locator("canvas")).toBeVisible();
         await expect(page.locator(HUD_TRACK)).not.toHaveText(/Track: —/);
