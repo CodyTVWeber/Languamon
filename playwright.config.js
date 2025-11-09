@@ -16,6 +16,10 @@ export default defineConfig({
     webServer: {
         command: "node scripts/serve-static.js",
         url: BASE_URL,
+        env: {
+            PORT: String(PORT),
+            HOST,
+        },
         reuseExistingServer: !process.env.CI,
         timeout: 30_000,
     },
