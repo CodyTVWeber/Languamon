@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linguomon - Language Learning Adventure</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <h1>🎮 LINGUOMON</h1>
+            <div class="stats">
+                <span id="linguodex-count">Linguodex: 0/0</span>
+                <span id="player-level">Level: 1</span>
+            </div>
+        </div>
+        
+        <div class="game-screen">
+            <canvas id="gameCanvas" width="480" height="432"></canvas>
+            
+            <!-- Battle Screen -->
+            <div id="battleScreen" class="battle-screen hidden">
+                <div class="battle-container">
+                    <div class="enemy-area">
+                        <div class="linguomon-display enemy">
+                            <div id="enemySprite" class="sprite"></div>
+                            <div id="enemyName" class="name"></div>
+                            <div class="stat-line">
+                                <span id="enemyWord" class="word"></span>
+                                <span id="enemyLevel" class="level"></span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="player-area">
+                        <div class="linguomon-display player">
+                            <div id="playerSprite" class="sprite">👤</div>
+                            <div class="stat-line">
+                                <span>You</span>
+                                <span id="playerBattleLevel"></span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="battle-ui">
+                        <div id="battleMessage" class="battle-message"></div>
+                        
+                        <!-- Quiz Section -->
+                        <div id="quizSection" class="quiz-section hidden">
+                            <div class="question" id="quizQuestion"></div>
+                            <div class="answers" id="quizAnswers"></div>
+                        </div>
+                        
+                        <!-- Battle Menu -->
+                        <div id="battleMenu" class="battle-menu">
+                            <button class="battle-btn" id="fightBtn">FIGHT</button>
+                            <button class="battle-btn" id="catchBtn">CATCH</button>
+                            <button class="battle-btn" id="runBtn">RUN</button>
+                            <button class="battle-btn" id="useWordBtn">USE WORD</button>
+                        </div>
+                        
+                        <!-- Word Selection -->
+                        <div id="wordSelection" class="word-selection hidden">
+                            <div class="word-list" id="wordList"></div>
+                            <button class="back-btn" id="backBtn">BACK</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="controls-info">
+            <p>🎮 Controls: Arrow Keys or WASD to move | SPACE/ENTER to interact</p>
+            <p>💡 Walk through grass to encounter wild Linguomon!</p>
+        </div>
+        
+        <!-- Linguodex Screen -->
+        <div id="linguodexScreen" class="linguodex-screen hidden">
+            <div class="linguodex-container">
+                <h2>📚 LINGUODEX</h2>
+                <div id="linguodexList" class="linguodex-list"></div>
+                <button class="close-btn" id="closeLinguodex">CLOSE</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="game.js"></script>
+</body>
+</html>
