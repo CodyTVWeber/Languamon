@@ -54,7 +54,7 @@ python3 -m http.server 8000
 ## 🎯 What You Have Now
 
 ✅ **Fully playable game** - No setup required!
-✅ **22 words** across 4 languages (Spanish, French, German, Japanese)
+✅ **8 words** in Spanish (more languages planned)
 ✅ **Complete battle system** with quizzes
 ✅ **Collection system** (Linguodex)
 ✅ **Level progression**

@@ -34,7 +34,7 @@
 ✨ WHAT YOU HAVE
 
 ✅ Fully playable Pokemon-style game
-✅ 22 words across 4 languages (Spanish, French, German, Japanese)
+✅ 8 words available in Spanish (more languages planned)
 ✅ Complete battle system with quiz mechanics
 ✅ Collection system (Linguodex)
 ✅ Level progression & experience
@@ -139,8 +139,8 @@ Lines of Code:
   • Docs:         ~2,000 lines of documentation
 
 Game Content:
-  • 22 Linguomon (words)
-  • 4 languages
+  • 8 Linguomon (words)
+  • 1 language (Spanish focus)
   • 6 word types
   • 1 map area (can expand!)
 
@@ -151,7 +151,7 @@ Game Content:
 Everything is built, documented, and organized. The game is complete
 and ready to play, modify, or scale up. 
 
-Have fun catching Linguomon and learning languages! 🌍📚
+Have fun catching Linguomon and learning Spanish! 🌍📚
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 

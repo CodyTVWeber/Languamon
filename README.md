@@ -46,7 +46,7 @@ Linguomon is a Pokemon-style language learning game where:
 ✅ Random encounters in grass tiles  
 ✅ Turn-based battle system
 ✅ Quiz/test system for catching words
-✅ Multiple languages (Spanish, French, German, Japanese)
+✅ Spanish language track (more coming soon)
 ✅ Linguodex collection tracker
 ✅ Level system and experience
 ✅ Battle with collected words
@@ -89,7 +89,7 @@ Matching types deal extra damage in battle!
 - Spaced repetition through battles
 - Visual association with emojis
 - Progressive difficulty based on level
-- Multiple languages to learn
+- Spanish vocabulary focus (multi-language roadmap planned)
 
 ## 🔮 Future Roadmap
 

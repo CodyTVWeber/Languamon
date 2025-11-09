@@ -16,12 +16,10 @@ test.describe("Lingua Legends sanity checks", () => {
     });
 
     test("selects a track and updates HUD after entering overworld", async ({ page }) => {
-        await page.goto("/");
-
-        await enterOverworld(page, { select: 1 });
+        await enterOverworld(page);
 
         await expect(page.locator("canvas")).toBeVisible();
-        await expect(page.locator(HUD_TRACK)).not.toHaveText(/Track: —/);
+        await expect(page.locator(HUD_TRACK)).toHaveText(/Track: Español — Valle Verde/);
         await expect(page.locator(HUD_PROGRESS)).toHaveText(/Lexicon: \d+\/\d+/);
     });
 });

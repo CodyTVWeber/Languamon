@@ -404,7 +404,7 @@ git push origin feature/add-sound
 ## 💡 Ideas to Try
 
 ### Quick Wins (< 1 hour)
-- Add more words to existing languages
+- Expand the Spanish word list
 - Change the map layout
 - Adjust colors and styling
 - Modify encounter rates
