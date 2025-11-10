@@ -7,8 +7,9 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <main class="shell">
-        <section class="hud">
+    <div class="game-surface">
+        <div id="game-root" class="game-root"></div>
+        <div class="hud-overlay">
             <h1 class="hud-title">Lingua Legends GB</h1>
             <div class="hud-panel">
                 <span id="hud-track">Track: —</span>
@@ -17,21 +18,9 @@
             </div>
             <div class="hud-feed" id="hud-feed"></div>
             <p class="hud-hint">Arrow keys / WASD move • Space or A interacts • Enter confirms • L button opens LexiLog • Tap controls on touch</p>
-        </section>
-        <section class="cabinet">
-            <div class="cabinet-top">
-                <div class="speaker">
-                    <span></span><span></span><span></span><span></span><span></span>
-                </div>
-                <div class="power-led"></div>
-            </div>
-            <div class="screen">
-                <div id="game-root" class="game-root"></div>
-                <div class="scanlines"></div>
-            </div>
-            <div class="cabinet-label">LINGUA BOY ADVANCE</div>
-        </section>
-    </main>
+        </div>
+        <div class="scanlines" aria-hidden="true"></div>
+    </div>
     <div class="mobile-controls">
         <div class="mobile-pad">
             <span class="pad-void" aria-hidden="true"></span>

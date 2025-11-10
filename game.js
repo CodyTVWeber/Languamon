@@ -115,6 +115,20 @@ const LANGUAGE_TRACKS = [
 
 const TOTAL_GLOBAL_WORDS = LANGUAGE_TRACKS.reduce((sum, track) => sum + track.lexicon.length, 0);
 
+function emitTestEvent(type, payload) {
+    if (
+        typeof window !== "undefined" &&
+        window.__LL_TEST__ &&
+        typeof window.__LL_TEST__.emit === "function"
+    ) {
+        try {
+            window.__LL_TEST__.emit(type, payload);
+        } catch (error) {
+            console.warn("Lingua Legends test hook error", error);
+        }
+    }
+}
+
 const kb = kaboom({
     root: document.querySelector("#game-root"),
     width: 240,
@@ -365,6 +379,7 @@ function resetForTrack(track) {
     logMessage(`Welcome to ${track.region}!`);
     logMessage(track.description);
     updateHud();
+    emitTestEvent("track-selected", { trackId: track.id });
 }
 
 function randomChoice(list) {
@@ -1073,6 +1088,7 @@ scene("overworld", ({ intro = false } = {}) => {
     function startDialogue(lines, onComplete = () => {}) {
         const queue = Array.isArray(lines) ? [...lines] : [String(lines)];
         if (!queue.length) return;
+        const originalLines = queue.slice();
 
         const panel = add([
             rect(width() - 12, 52),
@@ -1104,13 +1120,16 @@ scene("overworld", ({ intro = false } = {}) => {
                     this.label.destroy();
                     dialogue = null;
                     this.onComplete();
+                    emitTestEvent("dialogue-closed", {});
                     return;
                 }
                 this.label.text = this.queue.shift();
+                emitTestEvent("dialogue-line", { text: this.label.text });
             },
         };
 
         dialogue = dialogueState;
+        emitTestEvent("dialogue-open", { lines: originalLines });
         dialogue.advance();
     }
 

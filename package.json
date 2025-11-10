@@ -1,0 +1,26 @@
+{
+  "name": "workspace",
+  "version": "1.0.0",
+  "description": "Catch words, learn languages, and become a Linguomon master!",
+  "type": "module",
+  "main": "game.js",
+  "scripts": {
+    "test": "npm run test:e2e",
+    "test:e2e": "playwright test",
+    "serve:test": "node scripts/serve-static.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CodyTVWeber/Languamon.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/CodyTVWeber/Languamon/issues"
+  },
+  "homepage": "https://github.com/CodyTVWeber/Languamon#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.56.1"
+  }
+}

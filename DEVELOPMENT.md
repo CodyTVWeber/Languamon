@@ -28,6 +28,16 @@ python3 -m http.server 8000
 
 ## 📝 Common Tasks
 
+### Automated Testing
+
+- Install dependencies: `npm install`
+- Install browser binaries (first run only): `npx playwright install --with-deps`
+- Run the end-to-end suite: `npm run test:e2e`
+  - Spins up a local static server and opens the game in headless Chromium.
+  - Verifies the menu renders, keyboard navigation works, and the HUD updates when entering the overworld.
+
+**Coverage:** current tests cover the primary happy path only. They do not validate encounters, input edge cases, or mobile controls yet. Add more scenarios under `tests/e2e/` as new features ship.
+
 ### Adding a New Word
 
 Edit `game.js`, find `initLinguomon()`:
@@ -394,7 +404,7 @@ git push origin feature/add-sound
 ## 💡 Ideas to Try
 
 ### Quick Wins (< 1 hour)
-- Add more words to existing languages
+- Expand the Spanish word list
 - Change the map layout
 - Adjust colors and styling
 - Modify encounter rates
