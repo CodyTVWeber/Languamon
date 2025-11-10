@@ -1016,9 +1016,8 @@ scene("overworld", ({ intro = false } = {}) => {
 
     camScale(2.4);
 
-    const sanitized = MAP_LAYOUT.map(row => row.replace(/S/g, "P"));
     const level = addLevel(
-        sanitized,
+        MAP_LAYOUT,
         {
             T: () => [
                 sprite("tree"),
@@ -1030,6 +1029,7 @@ scene("overworld", ({ intro = false } = {}) => {
             G: () => [sprite("grass"), anchor("topleft"), z(-5)],
             F: () => [sprite("flowers"), anchor("topleft"), z(-5)],
             P: () => [sprite("path"), anchor("topleft"), z(-6)],
+            S: () => [sprite("path"), anchor("topleft"), z(-6)],
             W: () => [sprite("water"), anchor("topleft"), area(), solid(), z(4)],
             C: () => [sprite("house"), anchor("topleft"), area({ width: 16, height: 14, offset: vec2(0, 2) }), solid(), z(4)],
         },
