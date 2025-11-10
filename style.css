@@ -38,12 +38,18 @@ body {
 .game-root {
     position: absolute;
     inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     background: var(--bg-deep);
 }
 
 .game-root canvas {
-    width: 100% !important;
-    height: 100% !important;
+    width: auto !important;
+    height: auto !important;
+    max-width: 100%;
+    max-height: 100%;
+    aspect-ratio: 3 / 2;
     display: block;
     image-rendering: pixelated;
     image-rendering: crisp-edges;
@@ -52,13 +58,16 @@ body {
 
 .hud-overlay {
     position: absolute;
-    top: clamp(12px, 4vh, 48px);
-    left: clamp(12px, 4vw, 56px);
+    top: clamp(16px, 4vh, 52px);
+    right: clamp(16px, 5vw, 64px);
+    left: auto;
     display: flex;
     flex-direction: column;
     gap: 14px;
     padding: 18px 20px;
-    max-width: min(320px, 80vw);
+    max-width: min(320px, 28vw);
+    max-height: min(520px, 90vh);
+    overflow-y: auto;
     background: var(--hud-bg);
     border: 1px solid var(--hud-border);
     border-radius: 16px;
@@ -70,7 +79,7 @@ body {
 }
 
 .hud-title {
-    font-size: clamp(1.2rem, 2.6vw, 1.7rem);
+    font-size: clamp(1.05rem, 1.8vw, 1.35rem);
     letter-spacing: 0.12em;
     text-transform: uppercase;
     text-align: left;
@@ -81,7 +90,7 @@ body {
 .hud-panel {
     display: grid;
     gap: 6px;
-    font-size: clamp(0.85rem, 2.2vw, 1rem);
+    font-size: clamp(0.8rem, 1.6vw, 0.95rem);
     background: rgba(6, 18, 32, 0.55);
     border-radius: 12px;
     padding: 12px;
@@ -97,7 +106,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    font-size: clamp(0.8rem, 2vw, 0.95rem);
+    font-size: clamp(0.75rem, 1.5vw, 0.9rem);
     line-height: 1.35;
     background: rgba(8, 20, 40, 0.52);
     border-radius: 12px;
@@ -111,7 +120,7 @@ body {
 }
 
 .hud-hint {
-    font-size: clamp(0.7rem, 1.8vw, 0.9rem);
+    font-size: clamp(0.65rem, 1.4vw, 0.85rem);
     color: var(--hud-muted);
     line-height: 1.4;
 }
@@ -275,8 +284,15 @@ body {
     }
 }
 
+@media (max-width: 900px) {
+    .hud-overlay {
+        max-width: min(320px, 44vw);
+    }
+}
+
 @media (max-width: 620px) {
     .hud-overlay {
+        right: auto;
         left: 50%;
         transform: translateX(-50%);
         max-width: calc(100vw - 48px);
